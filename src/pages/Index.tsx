@@ -54,17 +54,17 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-muted/30">
-      <header className="py-12 px-4 sm:px-6 lg:px-8 text-center animate-fade-in bg-background">
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-foreground mb-4 tracking-tight">
+      <header className="py-8 px-4 sm:px-6 lg:px-8 text-center animate-fade-in bg-background">
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-foreground mb-3 tracking-tight">
           CAÇAMBAS DE ENTULHOS
         </h1>
-        <p className="text-lg sm:text-xl text-muted-foreground font-medium">
+        <p className="text-base sm:text-lg text-muted-foreground font-medium">
           Escolha o tamanho ideal para sua obra
         </p>
       </header>
 
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {products.map((product, index) => (
             <div
               key={product.id}
