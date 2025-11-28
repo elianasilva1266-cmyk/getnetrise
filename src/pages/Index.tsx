@@ -4,7 +4,7 @@ import cacamba4m from "@/assets/cacamba-4m-real.jpg";
 import cacamba5m from "@/assets/cacamba-5m-real.webp";
 import cacamba7m from "@/assets/cacamba-7m-real.jpg";
 import cacamba10m from "@/assets/cacamba-10m-real.webp";
-import cacamba26m from "@/assets/cacamba-26m-real.jpg";
+import cacamba26m from "@/assets/cacamba-26m.avif";
 
 const Index = () => {
   const products = [
