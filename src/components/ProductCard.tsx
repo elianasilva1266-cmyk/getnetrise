@@ -17,8 +17,8 @@ const ProductCard = ({ title, price, image, size }: ProductCardProps) => {
   return (
     <>
       <Card className="group overflow-hidden transition-all duration-300 hover:shadow-xl animate-fade-in bg-card">
-        <CardContent className="p-6">
-          <div className="relative w-full aspect-square mb-4 mx-auto max-w-[220px]">
+        <CardContent className="p-4">
+          <div className="relative w-full aspect-square mb-3 mx-auto max-w-[180px]">
             <div className="absolute inset-0 rounded-full overflow-hidden bg-muted">
               <img
                 src={image}
@@ -29,15 +29,15 @@ const ProductCard = ({ title, price, image, size }: ProductCardProps) => {
             </div>
           </div>
           
-          <div className="text-center space-y-3">
+          <div className="text-center space-y-2">
             <h3 className="text-xs font-bold text-foreground uppercase tracking-wide">{title}</h3>
-            <p className="text-2xl font-bold text-secondary">{price}</p>
+            <p className="text-xl font-bold text-secondary">{price}</p>
             
             <Button 
               onClick={() => setOrderDialogOpen(true)}
-              className="w-full gap-2 transition-all duration-300 hover:gap-3 font-semibold text-sm"
+              className="w-full gap-1.5 transition-all duration-300 hover:gap-2 font-semibold text-xs py-2"
             >
-              <ShoppingCart className="w-4 h-4" />
+              <ShoppingCart className="w-3.5 h-3.5" />
               Adicionar ao Carrinho
             </Button>
           </div>
