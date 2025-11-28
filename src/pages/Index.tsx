@@ -4,7 +4,7 @@ import cacamba4m from "@/assets/cacamba-4m-real.jpg";
 import cacamba5m from "@/assets/cacamba-5m-real.webp";
 import cacamba7m from "@/assets/cacamba-7m-real.jpg";
 import cacamba10m from "@/assets/cacamba-10m-real.webp";
-import cacamba26m from "@/assets/cacamba-26m.jpg";
+import cacamba26m from "@/assets/cacamba-26m-real.jpg";
 
 const Index = () => {
   const products = [
@@ -53,8 +53,8 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="py-16 px-4 sm:px-6 lg:px-8 text-center animate-fade-in">
+    <div className="min-h-screen bg-muted/30">
+      <header className="py-12 px-4 sm:px-6 lg:px-8 text-center animate-fade-in bg-background">
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-foreground mb-4 tracking-tight">
           CAÇAMBAS DE ENTULHOS
         </h1>
@@ -63,7 +63,7 @@ const Index = () => {
         </p>
       </header>
 
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
           {products.map((product, index) => (
             <div
