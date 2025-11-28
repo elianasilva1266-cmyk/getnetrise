@@ -1,9 +1,9 @@
 import ProductCard from "@/components/ProductCard";
-import cacamba3m from "@/assets/cacamba-3m.jpg";
-import cacamba4m from "@/assets/cacamba-4m.jpg";
-import cacamba5m from "@/assets/cacamba-5m.jpg";
-import cacamba7m from "@/assets/cacamba-7m.jpg";
-import cacamba10m from "@/assets/cacamba-10m.jpg";
+import cacamba3m from "@/assets/cacamba-3m.avif";
+import cacamba4m from "@/assets/cacamba-4m-real.jpg";
+import cacamba5m from "@/assets/cacamba-5m-real.webp";
+import cacamba7m from "@/assets/cacamba-7m-real.jpg";
+import cacamba10m from "@/assets/cacamba-10m-real.webp";
 import cacamba26m from "@/assets/cacamba-26m.jpg";
 
 const Index = () => {
