@@ -197,22 +197,51 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
         {pixPayment ? (
           <div className="space-y-6 py-4">
             {paymentStatus === "approved" ? (
-              <div className="text-center space-y-4 py-8">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                  <CheckCircle2 className="w-12 h-12 text-green-600" />
-                </div>
-                <h3 className="text-2xl font-bold text-green-600">Pagamento Efetuado com Sucesso!</h3>
-                <p className="text-muted-foreground">Seu pagamento foi confirmado.</p>
-                <div className="pt-4 border-t space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Valor:</span>
-                    <span className="font-bold text-green-600 text-xl">
-                      R$ {pixPayment.amount.toFixed(2).replace(".", ",")}
-                    </span>
+              <div className="space-y-6">
+                <div className="text-center space-y-3">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                    <CheckCircle2 className="w-10 h-10 text-green-600" />
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">ID da transação:</span>
-                    <span className="font-mono">{pixPayment.identifier}</span>
+                  <h3 className="text-xl font-bold text-green-600">Pagamento Efetuado com Sucesso!</h3>
+                </div>
+
+                <div className="bg-muted/50 rounded-xl p-5 space-y-4">
+                  <h4 className="font-bold text-center text-lg border-b pb-2">Recibo de Compra</h4>
+                  
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Nome:</span>
+                      <span className="font-medium text-right">{name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">CPF/CNPJ:</span>
+                      <span className="font-medium">{document}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Produto:</span>
+                      <span className="font-medium">{product.title}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Tamanho:</span>
+                      <span className="font-medium">{product.size}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Quantidade:</span>
+                      <span className="font-medium">{quantity}</span>
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-3">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-lg">Valor Pago:</span>
+                      <span className="font-bold text-green-600 text-2xl">
+                        R$ {pixPayment.amount.toFixed(2).replace(".", ",")}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-3 text-xs text-muted-foreground text-center">
+                    <p>ID da transação: {pixPayment.identifier}</p>
                   </div>
                 </div>
               </div>
