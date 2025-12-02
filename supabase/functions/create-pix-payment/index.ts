@@ -83,6 +83,25 @@ serve(async (req) => {
 
     console.log('Creating PIX payment:', { amount, customerName: customer.name });
 
+    // Detectar se é CPF (11 dígitos) ou CNPJ (14 dígitos)
+    const documentNumbers = customer.cpf.replace(/\D/g, '');
+    const isCnpj = documentNumbers.length === 14;
+
+    const customerData: Record<string, string> = {
+      name: customer.name,
+      email: customer.email || '',
+      phone: customer.phone || ''
+    };
+
+    // Enviar campo correto baseado no tipo de documento
+    if (isCnpj) {
+      customerData.cnpj = documentNumbers;
+    } else {
+      customerData.cpf = documentNumbers;
+    }
+
+    console.log('Customer data:', JSON.stringify(customerData));
+
     const response = await fetch('https://api.risepay.com.br/api/External/Transactions', {
       method: 'POST',
       headers: {
@@ -94,12 +113,7 @@ serve(async (req) => {
         payment: {
           method: 'pix'
         },
-        customer: {
-          name: customer.name,
-          cpf: customer.cpf.replace(/\D/g, ''),
-          email: customer.email || '',
-          phone: customer.phone || ''
-        }
+        customer: customerData
       }),
     });
 
