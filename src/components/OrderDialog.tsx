@@ -13,6 +13,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Copy, Check, CheckCircle2, Download } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import { jsPDF } from "jspdf";
 
 interface OrderDialogProps {
   open: boolean;
@@ -203,44 +204,92 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   };
 
   const handleDownloadReceipt = () => {
-    const receiptContent = `
-═══════════════════════════════════════
-           RECIBO DE COMPRA
-═══════════════════════════════════════
-
-Nome: ${name}
-Produto: ${product.title}
-Tamanho: ${product.size}
-Quantidade: ${quantity}
-
-───────────────────────────────────────
-VALOR PAGO: R$ ${pixPayment?.amount.toFixed(2).replace(".", ",")}
-───────────────────────────────────────
-
-Código: ${receiptId}
-Produto ${productNumber}
-
-Data: ${new Date().toLocaleDateString('pt-BR')}
-Hora: ${new Date().toLocaleTimeString('pt-BR')}
-
-═══════════════════════════════════════
-        Obrigado pela preferência!
-═══════════════════════════════════════
-    `;
-
-    const blob = new Blob([receiptContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = window.document.createElement('a');
-    a.href = url;
-    a.download = `recibo-${receiptId}.txt`;
-    window.document.body.appendChild(a);
-    a.click();
-    window.document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Título
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("RECIBO DE COMPRA", pageWidth / 2, 30, { align: "center" });
+    
+    // Linha separadora
+    doc.setLineWidth(0.5);
+    doc.line(20, 40, pageWidth - 20, 40);
+    
+    // Dados do cliente
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    
+    let yPos = 55;
+    const lineHeight = 10;
+    
+    doc.setFont("helvetica", "bold");
+    doc.text("Nome:", 20, yPos);
+    doc.setFont("helvetica", "normal");
+    doc.text(name, 50, yPos);
+    
+    yPos += lineHeight;
+    doc.setFont("helvetica", "bold");
+    doc.text("Produto:", 20, yPos);
+    doc.setFont("helvetica", "normal");
+    doc.text(product.title, 50, yPos);
+    
+    yPos += lineHeight;
+    doc.setFont("helvetica", "bold");
+    doc.text("Tamanho:", 20, yPos);
+    doc.setFont("helvetica", "normal");
+    doc.text(product.size, 50, yPos);
+    
+    yPos += lineHeight;
+    doc.setFont("helvetica", "bold");
+    doc.text("Quantidade:", 20, yPos);
+    doc.setFont("helvetica", "normal");
+    doc.text(quantity.toString(), 60, yPos);
+    
+    // Linha separadora
+    yPos += 15;
+    doc.line(20, yPos, pageWidth - 20, yPos);
+    
+    // Valor pago
+    yPos += 15;
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("VALOR PAGO:", 20, yPos);
+    doc.setTextColor(34, 139, 34); // Verde
+    doc.text(`R$ ${pixPayment?.amount.toFixed(2).replace(".", ",")}`, pageWidth - 20, yPos, { align: "right" });
+    
+    // Reset cor
+    doc.setTextColor(0, 0, 0);
+    
+    // Linha separadora
+    yPos += 10;
+    doc.line(20, yPos, pageWidth - 20, yPos);
+    
+    // Metadados
+    yPos += 15;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 100, 100);
+    
+    doc.text(`Código: ${receiptId}`, 20, yPos);
+    yPos += 7;
+    doc.text(`Produto ${productNumber}`, 20, yPos);
+    yPos += 7;
+    doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')} - ${new Date().toLocaleTimeString('pt-BR')}`, 20, yPos);
+    
+    // Rodapé
+    yPos += 25;
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "italic");
+    doc.text("Obrigado pela preferência!", pageWidth / 2, yPos, { align: "center" });
+    
+    // Salvar PDF
+    doc.save(`recibo-${receiptId}.pdf`);
 
     toast({
       title: "Recibo baixado!",
-      description: "O recibo foi salvo no seu dispositivo.",
+      description: "O recibo em PDF foi salvo no seu dispositivo.",
     });
   };
 
