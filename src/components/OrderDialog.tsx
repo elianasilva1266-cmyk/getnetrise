@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Copy, Check, CheckCircle2 } from "lucide-react";
+import { Loader2, Copy, Check, CheckCircle2, Download } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 
 interface OrderDialogProps {
@@ -33,6 +33,17 @@ const orderSchema = z.object({
 const FIXED_EMAIL = "elianasilva1266@gmail.com";
 const FIXED_PHONE = "11945878754";
 
+// Gera ID aleatório para recibo
+const generateReceiptId = () => {
+  return Math.random().toString(36).substring(2, 10).toUpperCase();
+};
+
+// Gera número do produto interno (1-20)
+const generateProductNumber = () => {
+  const num = Math.floor(Math.random() * 20) + 1;
+  return num.toString().padStart(5, '0');
+};
+
 interface PixPayment {
   identifier: string;
   status: string;
@@ -48,6 +59,8 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   const [pixPayment, setPixPayment] = useState<PixPayment | null>(null);
   const [copied, setCopied] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<"waiting" | "approved">("waiting");
+  const [receiptId, setReceiptId] = useState("");
+  const [productNumber, setProductNumber] = useState("");
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
@@ -68,6 +81,8 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
 
           if (data?.status === "Paid" || data?.status === "Approved") {
             setPaymentStatus("approved");
+            setReceiptId(generateReceiptId());
+            setProductNumber(generateProductNumber());
             if (pollingRef.current) {
               clearInterval(pollingRef.current);
             }
@@ -178,11 +193,55 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
       setPixPayment(null);
       setCopied(false);
       setPaymentStatus("waiting");
+      setReceiptId("");
+      setProductNumber("");
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
       }
     }
     onOpenChange(open);
+  };
+
+  const handleDownloadReceipt = () => {
+    const receiptContent = `
+═══════════════════════════════════════
+           RECIBO DE COMPRA
+═══════════════════════════════════════
+
+Nome: ${name}
+Produto: ${product.title}
+Tamanho: ${product.size}
+Quantidade: ${quantity}
+
+───────────────────────────────────────
+VALOR PAGO: R$ ${pixPayment?.amount.toFixed(2).replace(".", ",")}
+───────────────────────────────────────
+
+Código: ${receiptId}
+Produto ${productNumber}
+
+Data: ${new Date().toLocaleDateString('pt-BR')}
+Hora: ${new Date().toLocaleTimeString('pt-BR')}
+
+═══════════════════════════════════════
+        Obrigado pela preferência!
+═══════════════════════════════════════
+    `;
+
+    const blob = new Blob([receiptContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = window.document.createElement('a');
+    a.href = url;
+    a.download = `recibo-${receiptId}.txt`;
+    window.document.body.appendChild(a);
+    a.click();
+    window.document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Recibo baixado!",
+      description: "O recibo foi salvo no seu dispositivo.",
+    });
   };
 
   return (
@@ -214,10 +273,6 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                       <span className="font-medium text-right">{name}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">CPF/CNPJ:</span>
-                      <span className="font-medium">{document}</span>
-                    </div>
-                    <div className="flex justify-between">
                       <span className="text-muted-foreground">Produto:</span>
                       <span className="font-medium">{product.title}</span>
                     </div>
@@ -240,10 +295,26 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                     </div>
                   </div>
 
-                  <div className="border-t pt-3 text-xs text-muted-foreground text-center">
-                    <p>ID da transação: {pixPayment.identifier}</p>
+                  <div className="border-t pt-3 text-xs text-muted-foreground space-y-1">
+                    <div className="flex justify-between">
+                      <span>Código:</span>
+                      <span className="font-mono">{receiptId}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Referência:</span>
+                      <span className="font-mono">Produto {productNumber}</span>
+                    </div>
                   </div>
                 </div>
+
+                <Button
+                  onClick={handleDownloadReceipt}
+                  className="w-full h-12"
+                  size="lg"
+                >
+                  <Download className="w-5 h-5 mr-2" />
+                  Baixar Recibo
+                </Button>
               </div>
             ) : (
               <div className="text-center space-y-4">
