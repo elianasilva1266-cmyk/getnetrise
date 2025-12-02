@@ -27,9 +27,6 @@ const ProductCard = ({ title, price, image, size }: ProductCardProps) => {
                 loading="lazy"
               />
             </div>
-            <div className="absolute bottom-2 right-2 bg-background text-foreground px-4 py-2 rounded-2xl text-base font-bold shadow-lg border-2 border-border">
-              {size}
-            </div>
           </div>
           
           <div className="text-center space-y-4">
