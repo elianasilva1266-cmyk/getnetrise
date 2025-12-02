@@ -9,6 +9,13 @@ import cacamba26m from "@/assets/cacamba-26m.avif";
 const Index = () => {
   const products = [
     {
+      id: 0,
+      title: "PRODUTO TESTE",
+      size: "Teste",
+      price: "R$ 5,00",
+      image: cacamba3m,
+    },
+    {
       id: 1,
       title: "CAÇAMBA DE 3M³",
       size: "3m³",
