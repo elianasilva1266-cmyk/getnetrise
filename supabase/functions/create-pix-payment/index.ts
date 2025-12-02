@@ -87,19 +87,29 @@ serve(async (req) => {
     const documentNumbers = customer.cpf.replace(/\D/g, '');
     const isCnpj = documentNumbers.length === 14;
 
-    // Para CNPJ, a API RisePay pode precisar de ambos os campos
-    const customerData: Record<string, string> = {
-      name: customer.name,
-      email: customer.email || '',
-      phone: customer.phone || '',
-      cpf: isCnpj ? '' : documentNumbers,
-    };
-
+    // Montar dados do cliente baseado no tipo de documento
+    let customerData: Record<string, string>;
+    
     if (isCnpj) {
-      customerData.cnpj = documentNumbers;
+      // Para CNPJ, não enviar o campo cpf
+      customerData = {
+        name: customer.name,
+        email: customer.email || '',
+        phone: customer.phone || '',
+        cnpj: documentNumbers,
+      };
+    } else {
+      // Para CPF, enviar normalmente
+      customerData = {
+        name: customer.name,
+        email: customer.email || '',
+        phone: customer.phone || '',
+        cpf: documentNumbers,
+      };
     }
 
     console.log('Customer data:', JSON.stringify(customerData));
+    console.log('Is CNPJ:', isCnpj);
 
     const response = await fetch('https://api.risepay.com.br/api/External/Transactions', {
       method: 'POST',
