@@ -6,13 +6,15 @@ const corsHeaders = {
 };
 
 interface PaymentRequest {
-  amount: number;
-  customer: {
+  amount?: number;
+  customer?: {
     name: string;
     cpf: string;
     email?: string;
     phone?: string;
   };
+  checkStatus?: boolean;
+  identifier?: string;
 }
 
 serve(async (req) => {
@@ -32,11 +34,55 @@ serve(async (req) => {
       );
     }
 
-    const { amount, customer }: PaymentRequest = await req.json();
+    const body: PaymentRequest = await req.json();
+
+    // Check payment status
+    if (body.checkStatus && body.identifier) {
+      console.log('Checking payment status for:', body.identifier);
+
+      const response = await fetch(`https://api.risepay.com.br/api/External/Transactions/${body.identifier}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': risePayToken,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      console.log('RisePay status response:', JSON.stringify(data));
+
+      if (!response.ok || !data.success) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            message: data.message || 'Erro ao verificar status' 
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          status: data.object?.status,
+          identifier: body.identifier
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create PIX payment
+    const { amount, customer } = body;
+
+    if (!amount || !customer) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Dados incompletos' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     console.log('Creating PIX payment:', { amount, customerName: customer.name });
 
-    // Call RisePay API to create PIX transaction
     const response = await fetch('https://api.risepay.com.br/api/External/Transactions', {
       method: 'POST',
       headers: {

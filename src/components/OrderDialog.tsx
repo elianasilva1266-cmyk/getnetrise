@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Copy, Check } from "lucide-react";
+import { Loader2, Copy, Check, CheckCircle2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 
 interface OrderDialogProps {
@@ -47,10 +47,47 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [pixPayment, setPixPayment] = useState<PixPayment | null>(null);
   const [copied, setCopied] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<"waiting" | "approved">("waiting");
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
   const priceValue = parseFloat(product.price.replace("R$", "").replace(".", "").replace(",", ".").trim());
   const total = priceValue * quantity;
+
+  // Polling para verificar status do pagamento
+  useEffect(() => {
+    if (pixPayment && paymentStatus === "waiting") {
+      pollingRef.current = setInterval(async () => {
+        try {
+          const { data, error } = await supabase.functions.invoke('create-pix-payment', {
+            body: {
+              checkStatus: true,
+              identifier: pixPayment.identifier
+            }
+          });
+
+          if (data?.status === "Paid" || data?.status === "Approved") {
+            setPaymentStatus("approved");
+            if (pollingRef.current) {
+              clearInterval(pollingRef.current);
+            }
+            toast({
+              title: "Pagamento confirmado!",
+              description: "Seu pagamento foi aprovado com sucesso.",
+            });
+          }
+        } catch (error) {
+          console.error("Erro ao verificar status:", error);
+        }
+      }, 5000); // Verifica a cada 5 segundos
+    }
+
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+      }
+    };
+  }, [pixPayment, paymentStatus, toast]);
 
   const formatDocument = (value: string) => {
     const numbers = value.replace(/\D/g, "");
@@ -140,6 +177,10 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
       setDocument("");
       setPixPayment(null);
       setCopied(false);
+      setPaymentStatus("waiting");
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+      }
     }
     onOpenChange(open);
   };
@@ -155,58 +196,87 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
 
         {pixPayment ? (
           <div className="space-y-6 py-4">
-            <div className="text-center space-y-4">
-              <div className="bg-muted p-6 rounded-xl inline-block mx-auto">
-                <QRCodeSVG 
-                  value={pixPayment.qrCode} 
-                  size={200}
-                  level="H"
-                  includeMargin
-                />
+            {paymentStatus === "approved" ? (
+              <div className="text-center space-y-4 py-8">
+                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="w-12 h-12 text-green-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-green-600">Pagamento Efetuado com Sucesso!</h3>
+                <p className="text-muted-foreground">Seu pagamento foi confirmado.</p>
+                <div className="pt-4 border-t space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Valor:</span>
+                    <span className="font-bold text-green-600 text-xl">
+                      R$ {pixPayment.amount.toFixed(2).replace(".", ",")}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">ID da transação:</span>
+                    <span className="font-mono">{pixPayment.identifier}</span>
+                  </div>
+                </div>
               </div>
-              
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  Escaneie o QR Code acima ou copie o código PIX
-                </p>
-                <div className="flex items-center gap-2">
-                  <Input 
+            ) : (
+              <div className="text-center space-y-4">
+                <div className="bg-muted p-6 rounded-xl inline-block mx-auto">
+                  <QRCodeSVG 
                     value={pixPayment.qrCode} 
-                    readOnly 
-                    className="text-xs h-10"
+                    size={200}
+                    level="H"
+                    includeMargin
                   />
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={handleCopyPix}
-                    className="shrink-0"
-                  >
-                    {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-                  </Button>
+                </div>
+                
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Escaneie o QR Code acima ou copie o código PIX
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Input 
+                      value={pixPayment.qrCode} 
+                      readOnly 
+                      className="text-xs h-10"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Valor:</span>
+                    <span className="font-bold text-secondary text-xl">
+                      R$ {pixPayment.amount.toFixed(2).replace(".", ",")}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">ID da transação:</span>
+                    <span className="font-mono">{pixPayment.identifier}</span>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleCopyPix}
+                  className="w-full h-12"
+                  size="lg"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="w-5 h-5 mr-2" />
+                      Código Copiado!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-5 h-5 mr-2" />
+                      Copiar Código PIX
+                    </>
+                  )}
+                </Button>
+
+                <div className="flex items-center justify-center gap-2 text-amber-600 bg-amber-50 rounded-lg p-3">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span className="font-medium">Aguardando pagamento...</span>
                 </div>
               </div>
-
-              <div className="pt-4 border-t space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Valor:</span>
-                  <span className="font-bold text-secondary text-xl">
-                    R$ {pixPayment.amount.toFixed(2).replace(".", ",")}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">ID da transação:</span>
-                  <span className="font-mono">{pixPayment.identifier}</span>
-                </div>
-              </div>
-            </div>
-
-            <Button
-              onClick={() => handleClose(false)}
-              variant="outline"
-              className="w-full h-12"
-            >
-              Fechar
-            </Button>
+            )}
           </div>
         ) : (
           <div className="space-y-6 py-4">
