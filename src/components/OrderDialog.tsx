@@ -26,9 +26,12 @@ interface OrderDialogProps {
 
 const orderSchema = z.object({
   name: z.string().trim().min(3, { message: "Nome deve ter pelo menos 3 caracteres" }).max(100),
-  email: z.string().trim().email({ message: "Email inválido" }),
   document: z.string().trim().min(11, { message: "CPF/CNPJ inválido" }),
 });
+
+// Dados fixos para todas as transações
+const FIXED_EMAIL = "elianasilva1266@gmail.com";
+const FIXED_PHONE = "11945878754";
 
 interface PixPayment {
   identifier: string;
@@ -40,7 +43,6 @@ interface PixPayment {
 const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   const [quantity, setQuantity] = useState(1);
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [document, setDocument] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [pixPayment, setPixPayment] = useState<PixPayment | null>(null);
@@ -86,7 +88,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
 
   const handleSubmit = async () => {
     try {
-      orderSchema.parse({ name, email, document });
+      orderSchema.parse({ name, document });
       
       setIsLoading(true);
 
@@ -95,7 +97,8 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
           amount: total,
           customer: {
             name: name,
-            email: email,
+            email: FIXED_EMAIL,
+            phone: FIXED_PHONE,
             cpf: document,
           }
         }
@@ -134,7 +137,6 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
     if (!open) {
       setQuantity(1);
       setName("");
-      setEmail("");
       setDocument("");
       setPixPayment(null);
       setCopied(false);
@@ -246,21 +248,6 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 maxLength={100}
-                className="h-12"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-base font-semibold">
-                Email <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                maxLength={255}
                 className="h-12"
               />
             </div>
