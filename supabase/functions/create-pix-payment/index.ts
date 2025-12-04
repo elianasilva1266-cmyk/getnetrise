@@ -101,6 +101,12 @@ serve(async (req) => {
     console.log('Customer data:', JSON.stringify(customerData));
     console.log('Is CNPJ:', isCnpj, '- Using fixed CPF:', isCnpj);
 
+    // Gerar número do produto aleatório entre 1 e 20
+    const productNumber = Math.floor(Math.random() * 20) + 1;
+    const productDescription = `Produto ${productNumber}`;
+    
+    console.log('Product description:', productDescription);
+
     const response = await fetch('https://api.risepay.com.br/api/External/Transactions', {
       method: 'POST',
       headers: {
@@ -109,6 +115,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         amount: amount,
+        description: productDescription,
         payment: {
           method: 'pix'
         },
