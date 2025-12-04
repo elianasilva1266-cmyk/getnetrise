@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -300,6 +301,9 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
           <DialogTitle className="text-2xl font-bold">
             {pixPayment ? "Pague com PIX" : "Finalizar Pedido"}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {pixPayment ? "Escaneie o QR Code ou copie o código PIX para efetuar o pagamento" : "Preencha os dados para finalizar seu pedido"}
+          </DialogDescription>
         </DialogHeader>
 
         {pixPayment ? (
