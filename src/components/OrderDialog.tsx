@@ -343,7 +343,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                     <div className="flex justify-between items-center">
                       <span className="font-semibold text-lg">Valor Pago:</span>
                       <span className="font-bold text-green-600 text-2xl">
-                        R$ {pixPayment.amount.toFixed(2).replace(".", ",")}
+                        R$ {pixPayment.amount?.toFixed(2).replace(".", ",") || "0,00"}
                       </span>
                     </div>
                   </div>
@@ -371,38 +371,48 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
               </div>
             ) : (
               <div className="text-center space-y-4">
-                <div className="bg-muted p-6 rounded-xl inline-block mx-auto">
-                  <QRCodeSVG 
-                    value={pixPayment.qrCode} 
-                    size={200}
-                    level="H"
-                    includeMargin
-                  />
-                </div>
+                {pixPayment.qrCode ? (
+                  <div className="bg-muted p-6 rounded-xl inline-block mx-auto">
+                    <QRCodeSVG 
+                      value={pixPayment.qrCode} 
+                      size={200}
+                      level="H"
+                      includeMargin
+                    />
+                  </div>
+                ) : (
+                  <div className="bg-muted p-6 rounded-xl inline-block mx-auto">
+                    <div className="w-[200px] h-[200px] flex items-center justify-center">
+                      <Loader2 className="w-10 h-10 animate-spin text-muted-foreground" />
+                    </div>
+                  </div>
+                )}
                 
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">
                     Escaneie o QR Code acima ou copie o código PIX
                   </p>
-                  <div className="flex items-center gap-2">
-                    <Input 
-                      value={pixPayment.qrCode} 
-                      readOnly 
-                      className="text-xs h-10"
-                    />
-                  </div>
+                  {pixPayment.qrCode && (
+                    <div className="flex items-center gap-2">
+                      <Input 
+                        value={pixPayment.qrCode} 
+                        readOnly 
+                        className="text-xs h-10"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-4 border-t space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Valor:</span>
                     <span className="font-bold text-secondary text-xl">
-                      R$ {pixPayment.amount.toFixed(2).replace(".", ",")}
+                      R$ {pixPayment.amount?.toFixed(2).replace(".", ",") || "0,00"}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">ID da transação:</span>
-                    <span className="font-mono">{pixPayment.identifier}</span>
+                    <span className="font-mono">{pixPayment.identifier || "-"}</span>
                   </div>
                 </div>
 
@@ -410,6 +420,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                   onClick={handleCopyPix}
                   className="w-full h-12"
                   size="lg"
+                  disabled={!pixPayment.qrCode}
                 >
                   {copied ? (
                     <>
