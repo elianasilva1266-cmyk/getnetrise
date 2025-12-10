@@ -450,26 +450,37 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
 
             <div className="space-y-3">
               <Label className="text-base font-semibold">Quantidade</Label>
-              <div className="grid grid-cols-3 gap-3">
-                {[1, 2, 3].map((qty) => (
+              {product.size === "26m³" ? (
+                <div className="grid grid-cols-1 gap-3 max-w-[150px]">
                   <button
-                    key={qty}
-                    onClick={() => setQuantity(qty)}
-                    className={`
-                      p-6 rounded-lg border-2 transition-all duration-200
-                      ${quantity === qty 
-                        ? "border-secondary bg-secondary/10 text-secondary" 
-                        : "border-border hover:border-secondary/50"
-                      }
-                    `}
+                    className="p-6 rounded-lg border-2 border-secondary bg-secondary/10 text-secondary"
                   >
-                    <div className="text-3xl font-bold">{qty}</div>
-                    <div className="text-sm text-muted-foreground mt-1">
-                      {qty === 1 ? "unidade" : "unidades"}
-                    </div>
+                    <div className="text-3xl font-bold">1</div>
+                    <div className="text-sm text-muted-foreground mt-1">unidade</div>
                   </button>
-                ))}
-              </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-3">
+                  {[1, 2, 3].map((qty) => (
+                    <button
+                      key={qty}
+                      onClick={() => setQuantity(qty)}
+                      className={`
+                        p-6 rounded-lg border-2 transition-all duration-200
+                        ${quantity === qty 
+                          ? "border-secondary bg-secondary/10 text-secondary" 
+                          : "border-border hover:border-secondary/50"
+                        }
+                      `}
+                    >
+                      <div className="text-3xl font-bold">{qty}</div>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        {qty === 1 ? "unidade" : "unidades"}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
