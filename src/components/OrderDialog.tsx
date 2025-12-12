@@ -158,17 +158,39 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
         }
       });
 
-      if (error || !data?.success) {
-        throw new Error(data?.message || error?.message || 'Erro ao criar pagamento');
+      console.log('PIX Response:', JSON.stringify(data));
+      console.log('PIX Error:', error);
+
+      if (error) {
+        throw new Error(error.message || 'Erro ao criar pagamento');
       }
 
-      setPixPayment(data.data);
+      if (!data?.success) {
+        throw new Error(data?.message || 'Erro ao criar pagamento');
+      }
+
+      if (!data?.data?.qrCode) {
+        console.error('QR Code não encontrado na resposta:', data);
+        throw new Error('QR Code não foi gerado. Tente novamente.');
+      }
+
+      const pixData: PixPayment = {
+        identifier: data.data.identifier || '',
+        status: data.data.status || 'Waiting Payment',
+        amount: data.data.amount || total,
+        qrCode: data.data.qrCode,
+      };
+
+      console.log('PIX Data set:', JSON.stringify(pixData));
+      setPixPayment(pixData);
+      
       toast({
         title: "PIX gerado com sucesso!",
         description: "Escaneie o QR Code ou copie o código para pagar.",
       });
 
     } catch (error) {
+      console.error('Erro no handleSubmit:', error);
       if (error instanceof z.ZodError) {
         toast({
           title: "Erro no formulário",
