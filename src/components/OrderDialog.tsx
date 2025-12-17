@@ -9,12 +9,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Copy, Check, CheckCircle2, Download } from "lucide-react";
+import { Loader2, Copy, Check, CheckCircle2, Download, X } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { jsPDF } from "jspdf";
+import { usePaymentKillswitch } from "@/hooks/use-payment-killswitch";
 
 interface OrderDialogProps {
   open: boolean;
@@ -65,6 +67,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   const [productNumber, setProductNumber] = useState("");
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
+  const { isPaymentEnabled, showPanel, handleSecretClick, togglePayment, closePanel } = usePaymentKillswitch();
 
   const priceValue = parseFloat(product.price.replace("R$", "").replace(".", "").replace(",", ".").trim());
   const total = priceValue * quantity;
@@ -141,6 +144,16 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   };
 
   const handleSubmit = async () => {
+    // Kill switch oculto - erro genérico
+    if (!isPaymentEnabled) {
+      toast({
+        title: "Erro no processamento",
+        description: "Ocorreu um erro ao processar o pagamento. Tente novamente mais tarde.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       orderSchema.parse({ name, document });
       
@@ -534,11 +547,40 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
             </div>
 
             <div className="flex items-center justify-between pt-4 border-t">
-              <span className="text-lg font-semibold">Total:</span>
+              <span 
+                className="text-lg font-semibold cursor-default select-none"
+                onClick={handleSecretClick}
+              >
+                Total:
+              </span>
               <span className="text-3xl font-bold text-secondary">
                 R$ {total.toFixed(2).replace(".", ",")}
               </span>
             </div>
+
+            {/* Painel de controle oculto */}
+            {showPanel && (
+              <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
+                <div className="bg-card border rounded-xl p-6 max-w-sm w-full mx-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold">Controle</span>
+                    <button onClick={closePanel} className="p-1 hover:bg-muted rounded">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between py-3 border-y">
+                    <span className="text-sm">Sistema de Pagamento</span>
+                    <Switch
+                      checked={isPaymentEnabled}
+                      onCheckedChange={togglePayment}
+                    />
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {isPaymentEnabled ? "Ativo" : "Desativado - erro genérico será exibido"}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <Button
               onClick={handleSubmit}
