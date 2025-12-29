@@ -24,10 +24,10 @@ serve(async (req) => {
   }
 
   try {
-    const risePayToken = Deno.env.get('RISEPAY_PRIVATE_TOKEN');
+    const podPayApiKey = Deno.env.get('PODPAY_API_KEY');
     
-    if (!risePayToken) {
-      console.error('RISEPAY_PRIVATE_TOKEN not configured');
+    if (!podPayApiKey) {
+      console.error('PODPAY_API_KEY not configured');
       return new Response(
         JSON.stringify({ success: false, message: 'Token de pagamento não configurado' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -40,18 +40,18 @@ serve(async (req) => {
     if (body.checkStatus && body.identifier) {
       console.log('Checking payment status for:', body.identifier);
 
-      const response = await fetch(`https://api.risepay.com.br/api/External/Transactions/${body.identifier}`, {
+      const response = await fetch(`https://api.podpay.app/v1/transactions/${body.identifier}`, {
         method: 'GET',
         headers: {
-          'Authorization': risePayToken,
+          'x-api-key': podPayApiKey,
           'Content-Type': 'application/json',
         },
       });
 
       const data = await response.json();
-      console.log('RisePay status response:', JSON.stringify(data));
+      console.log('PodPay status response:', JSON.stringify(data));
 
-      if (!response.ok || !data.success) {
+      if (!response.ok) {
         return new Response(
           JSON.stringify({ 
             success: false, 
@@ -64,7 +64,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: true,
-          status: data.object?.status,
+          status: data.status,
           identifier: body.identifier
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -86,48 +86,56 @@ serve(async (req) => {
     // Detectar se é CPF (11 dígitos) ou CNPJ (14 dígitos)
     const documentNumbers = customer.cpf.replace(/\D/g, '');
     const isCnpj = documentNumbers.length === 14;
-
-    // CPF fixo para usar quando cliente informar CNPJ (workaround da API RisePay)
-    const FIXED_CPF_FOR_CNPJ = '19257915727';
-
-    // Montar dados do cliente - para CNPJ, usar CPF fixo internamente
-    const customerData = {
-      name: customer.name,
-      email: customer.email || '',
-      phone: customer.phone || '',
-      cpf: isCnpj ? FIXED_CPF_FOR_CNPJ : documentNumbers,
-    };
-
-    console.log('Customer data:', JSON.stringify(customerData));
-    console.log('Is CNPJ:', isCnpj, '- Using fixed CPF:', isCnpj);
+    const documentType = isCnpj ? 'cnpj' : 'cpf';
 
     // Gerar número do produto aleatório entre 1 e 20
     const productNumber = Math.floor(Math.random() * 20) + 1;
-    const productDescription = `Produto ${productNumber}`;
+    const productTitle = `Produto ${productNumber}`;
     
-    console.log('Product description:', productDescription);
+    console.log('Product title:', productTitle);
+    console.log('Document type:', documentType, '- Number:', documentNumbers);
 
-    const response = await fetch('https://api.risepay.com.br/api/External/Transactions', {
+    // Converter valor para centavos (PodPay usa centavos)
+    const amountInCents = Math.round(amount * 100);
+
+    const requestBody = {
+      paymentMethod: 'pix',
+      amount: amountInCents,
+      customer: {
+        document: {
+          type: documentType,
+          number: documentNumbers,
+        },
+        name: customer.name,
+        email: customer.email || '',
+        phone: customer.phone || '',
+      },
+      items: [
+        {
+          title: productTitle,
+          unitPrice: amountInCents,
+          quantity: 1,
+          tangible: true,
+        }
+      ]
+    };
+
+    console.log('PodPay request body:', JSON.stringify(requestBody));
+
+    const response = await fetch('https://api.podpay.app/v1/transactions', {
       method: 'POST',
       headers: {
-        'Authorization': risePayToken,
+        'x-api-key': podPayApiKey,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        amount: amount,
-        description: productDescription,
-        payment: {
-          method: 'pix'
-        },
-        customer: customerData
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     const data = await response.json();
 
-    console.log('RisePay response:', JSON.stringify(data));
+    console.log('PodPay response:', JSON.stringify(data));
 
-    if (!response.ok || !data.success) {
+    if (!response.ok) {
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -141,10 +149,11 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         data: {
-          identifier: data.object.identifier,
-          status: data.object.status,
-          amount: data.object.amount,
-          qrCode: data.object.pix?.qrCode,
+          identifier: data.id,
+          status: data.status,
+          amount: data.amount,
+          qrCode: data.pixQrCode,
+          qrCodeImage: data.pixQrCodeImage,
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
