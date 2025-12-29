@@ -77,14 +77,18 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
     if (pixPayment && paymentStatus === "waiting") {
       pollingRef.current = setInterval(async () => {
         try {
-          const { data, error } = await supabase.functions.invoke('create-pix-payment', {
+          const { data, error } = await supabase.functions.invoke("create-pix-payment", {
             body: {
               checkStatus: true,
-              identifier: pixPayment.identifier
-            }
+              identifier: pixPayment.identifier,
+            },
           });
 
-          if (data?.status === "Paid" || data?.status === "Approved") {
+          if (error) return;
+
+          const status = data?.data?.status ?? data?.status;
+
+          if (status === "Paid" || status === "Approved") {
             setPaymentStatus("approved");
             setReceiptId(generateReceiptId());
             setProductNumber(generateProductNumber());
@@ -156,19 +160,21 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
 
     try {
       orderSchema.parse({ name, document });
-      
+
       setIsLoading(true);
 
-      const { data, error } = await supabase.functions.invoke('create-pix-payment', {
+      const cleanDocument = document.replace(/\D/g, "");
+
+      const { data, error } = await supabase.functions.invoke("create-pix-payment", {
         body: {
           amount: total,
           customer: {
-            name: name,
+            name,
             email: FIXED_EMAIL,
             phone: FIXED_PHONE,
-            cpf: document,
-          }
-        }
+            cpf: cleanDocument,
+          },
+        },
       });
 
       console.log('PIX Response:', JSON.stringify(data));
@@ -488,6 +494,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
               {product.size === "26m³" ? (
                 <div className="grid grid-cols-1 gap-3 max-w-[150px]">
                   <button
+                    type="button"
                     className="p-6 rounded-lg border-2 border-secondary bg-secondary/10 text-secondary"
                   >
                     <div className="text-3xl font-bold">1</div>
@@ -499,14 +506,18 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                   {[1, 2, 3].map((qty) => (
                     <button
                       key={qty}
+                      type="button"
                       onClick={() => setQuantity(qty)}
-                      className={`
+                      className={
+                        `
                         p-6 rounded-lg border-2 transition-all duration-200
-                        ${quantity === qty 
-                          ? "border-secondary bg-secondary/10 text-secondary" 
-                          : "border-border hover:border-secondary/50"
+                        ${
+                          quantity === qty
+                            ? "border-secondary bg-secondary/10 text-secondary"
+                            : "border-border hover:border-secondary/50"
                         }
-                      `}
+                      `
+                      }
                     >
                       <div className="text-3xl font-bold">{qty}</div>
                       <div className="text-sm text-muted-foreground mt-1">
@@ -583,6 +594,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
             )}
 
             <Button
+              type="button"
               onClick={handleSubmit}
               className="w-full h-14 text-lg font-semibold"
               size="lg"
