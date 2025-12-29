@@ -48,37 +48,46 @@ serve(async (req) => {
         },
       });
 
-      const responseData = await response.json();
+      const responseData = await response.json().catch(() => null);
       console.log('PodPay status response:', JSON.stringify(responseData));
 
-      if (!response.ok || !responseData.success) {
+      // IMPORTANT: always return 200 so the client polling doesn't throw
+      if (!response.ok || !responseData?.success) {
+        const message =
+          responseData?.error?.message ||
+          responseData?.message ||
+          `Falha ao verificar status (HTTP ${response.status})`;
+
         return new Response(
-          JSON.stringify({ 
-            success: false, 
-            message: responseData.error?.message || 'Erro ao verificar status' 
+          JSON.stringify({
+            success: false,
+            message,
+            data: {
+              identifier: body.identifier,
+              status: 'unknown',
+            },
           }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      // PodPay wraps data inside responseData.data
       const transactionData = responseData.data;
 
-      // Map PodPay status to expected values
-      let status = transactionData.status;
-      if (status === 'paid') {
-        status = 'Paid';
-      } else if (status === 'pending') {
-        status = 'Waiting Payment';
-      }
+      // Map PodPay status to UI-friendly values
+      const podpayStatus: string = transactionData?.status;
+      const status = podpayStatus === 'paid'
+        ? 'Paid'
+        : podpayStatus === 'pending'
+          ? 'Waiting Payment'
+          : podpayStatus;
 
       return new Response(
         JSON.stringify({
           success: true,
           data: {
-            status: status,
-            identifier: transactionData.id,
-          }
+            status,
+            identifier: transactionData?.id ?? body.identifier,
+          },
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
