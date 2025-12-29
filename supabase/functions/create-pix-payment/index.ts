@@ -131,29 +131,32 @@ serve(async (req) => {
       body: JSON.stringify(requestBody),
     });
 
-    const data = await response.json();
+    const responseData = await response.json();
 
-    console.log('PodPay response:', JSON.stringify(data));
+    console.log('PodPay response:', JSON.stringify(responseData));
 
-    if (!response.ok) {
+    if (!response.ok || !responseData.success) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: data.message || 'Erro ao criar pagamento PIX' 
+          message: responseData.message || 'Erro ao criar pagamento PIX' 
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // PodPay wraps the transaction data inside responseData.data
+    const transactionData = responseData.data;
+
     return new Response(
       JSON.stringify({
         success: true,
         data: {
-          identifier: data.id,
-          status: data.status,
-          amount: data.amount,
-          qrCode: data.pixQrCode,
-          qrCodeImage: data.pixQrCodeImage,
+          identifier: transactionData.id,
+          status: transactionData.status,
+          amount: transactionData.amount,
+          qrCode: transactionData.pixQrCode,
+          qrCodeImage: transactionData.pixQrCodeImage,
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
