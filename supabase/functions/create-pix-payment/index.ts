@@ -48,24 +48,37 @@ serve(async (req) => {
         },
       });
 
-      const data = await response.json();
-      console.log('PodPay status response:', JSON.stringify(data));
+      const responseData = await response.json();
+      console.log('PodPay status response:', JSON.stringify(responseData));
 
-      if (!response.ok) {
+      if (!response.ok || !responseData.success) {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            message: data.message || 'Erro ao verificar status' 
+            message: responseData.error?.message || 'Erro ao verificar status' 
           }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
+      // PodPay wraps data inside responseData.data
+      const transactionData = responseData.data;
+
+      // Map PodPay status to expected values
+      let status = transactionData.status;
+      if (status === 'paid') {
+        status = 'Paid';
+      } else if (status === 'pending') {
+        status = 'Waiting Payment';
+      }
+
       return new Response(
         JSON.stringify({
           success: true,
-          status: data.status,
-          identifier: body.identifier
+          data: {
+            status: status,
+            identifier: transactionData.id,
+          }
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
