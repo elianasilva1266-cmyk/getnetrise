@@ -196,8 +196,8 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
       const pixData: PixPayment = {
         identifier: data.data.identifier || '',
         status: data.data.status || 'Waiting Payment',
-        // PodPay retorna em centavos, convertemos para reais
-        amount: (data.data.amount || total * 100) / 100,
+        // Usar o valor original em reais (total), não o valor em centavos da API
+        amount: total,
         qrCode: data.data.qrCode,
       };
 
