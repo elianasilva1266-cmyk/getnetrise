@@ -17,6 +17,7 @@ import { Loader2, Copy, Check, CheckCircle2, Download, X } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { jsPDF } from "jspdf";
 import { usePaymentKillswitch } from "@/hooks/use-payment-killswitch";
+import { formatCurrency, parsePrice, isValidDocument } from "@/lib/format";
 
 interface OrderDialogProps {
   open: boolean;
@@ -69,7 +70,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   const { toast } = useToast();
   const { isPaymentEnabled, showPanel, handleSecretClick, togglePayment, closePanel } = usePaymentKillswitch();
 
-  const priceValue = parseFloat(product.price.replace("R$", "").replace(".", "").replace(",", ".").trim());
+  const priceValue = parsePrice(product.price);
   const total = priceValue * quantity;
 
   // Polling para verificar status do pagamento
@@ -100,8 +101,8 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
               description: "Seu pagamento foi aprovado com sucesso.",
             });
           }
-        } catch (error) {
-          console.error("Erro ao verificar status:", error);
+        } catch {
+          // Silenciosamente ignora erros de polling - API pode retornar erro temporário
         }
       }, 5000); // Verifica a cada 5 segundos
     }
@@ -160,6 +161,16 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
 
     try {
       orderSchema.parse({ name, document });
+      
+      // Validação de CPF/CNPJ
+      if (!isValidDocument(document)) {
+        toast({
+          title: "Documento inválido",
+          description: "Por favor, informe um CPF ou CNPJ válido.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       setIsLoading(true);
 
@@ -177,9 +188,6 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
         },
       });
 
-      console.log('PIX Response:', JSON.stringify(data));
-      console.log('PIX Error:', error);
-
       if (error) {
         throw new Error(error.message || 'Erro ao criar pagamento');
       }
@@ -189,19 +197,16 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
       }
 
       if (!data?.data?.qrCode) {
-        console.error('QR Code não encontrado na resposta:', data);
         throw new Error('QR Code não foi gerado. Tente novamente.');
       }
 
       const pixData: PixPayment = {
         identifier: data.data.identifier || '',
         status: data.data.status || 'Waiting Payment',
-        // Usar o valor original em reais (total), não o valor em centavos da API
         amount: total,
         qrCode: data.data.qrCode,
       };
 
-      console.log('PIX Data set:', JSON.stringify(pixData));
       setPixPayment(pixData);
       
       toast({
@@ -210,7 +215,6 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
       });
 
     } catch (error) {
-      console.error('Erro no handleSubmit:', error);
       if (error instanceof z.ZodError) {
         toast({
           title: "Erro no formulário",
@@ -299,7 +303,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
     doc.setFont("helvetica", "bold");
     doc.text("VALOR PAGO:", 20, yPos);
     doc.setTextColor(34, 139, 34); // Verde
-    doc.text(`R$ ${pixPayment?.amount.toFixed(2).replace(".", ",")}`, pageWidth - 20, yPos, { align: "right" });
+    doc.text(`R$ ${formatCurrency(pixPayment?.amount ?? 0)}`, pageWidth - 20, yPos, { align: "right" });
     
     // Reset cor
     doc.setTextColor(0, 0, 0);
@@ -385,7 +389,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                     <div className="flex justify-between items-center">
                       <span className="font-semibold text-lg">Valor Pago:</span>
                       <span className="font-bold text-green-600 text-2xl">
-                        R$ {pixPayment.amount?.toFixed(2).replace(".", ",") || "0,00"}
+                        R$ {formatCurrency(pixPayment.amount ?? 0)}
                       </span>
                     </div>
                   </div>
@@ -451,7 +455,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Valor:</span>
                     <span className="font-bold text-secondary text-xl">
-                      R$ {pixPayment.amount?.toFixed(2).replace(".", ",") || "0,00"}
+                      R$ {formatCurrency(pixPayment.amount ?? 0)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
@@ -568,7 +572,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                 Total:
               </span>
               <span className="text-3xl font-bold text-secondary">
-                R$ {total.toFixed(2).replace(".", ",")}
+                R$ {formatCurrency(total)}
               </span>
             </div>
 
