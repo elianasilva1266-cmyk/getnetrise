@@ -33,7 +33,8 @@ const ProductCard = ({ title, price, image, size }: ProductCardProps) => {
             <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">{title}</h3>
             <p className="text-3xl font-bold text-secondary">{price}</p>
             
-            <Button 
+            <Button
+              type="button"
               onClick={() => setOrderDialogOpen(true)}
               className="w-full gap-2 transition-all duration-300 hover:gap-3 font-semibold text-base"
               size="lg"
