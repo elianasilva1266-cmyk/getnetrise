@@ -413,14 +413,16 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
               </div>
             ) : (
               <div className="text-center space-y-4">
-                {pixPayment.qrCode ? (
+              {pixPayment.qrCode ? (
                   <div className="bg-muted p-6 rounded-xl inline-block mx-auto">
-                    <QRCodeSVG 
-                      value={pixPayment.qrCode} 
-                      size={200}
-                      level="H"
-                      includeMargin
-                    />
+                    <div key={pixPayment.identifier}>
+                      <QRCodeSVG 
+                        value={pixPayment.qrCode} 
+                        size={200}
+                        level="H"
+                        includeMargin
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div className="bg-muted p-6 rounded-xl inline-block mx-auto">
