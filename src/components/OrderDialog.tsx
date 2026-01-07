@@ -271,9 +271,9 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
     const lineHeight = 10;
     
     doc.setFont("helvetica", "bold");
-    doc.text("Cliente:", 20, yPos);
+    doc.text("CPF/CNPJ:", 20, yPos);
     doc.setFont("helvetica", "normal");
-    doc.text("Confirmado", 50, yPos);
+    doc.text(document, 55, yPos);
     
     yPos += lineHeight;
     doc.setFont("helvetica", "bold");
@@ -367,6 +367,10 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                   <h4 className="font-bold text-center text-lg border-b pb-2">Recibo de Compra</h4>
                   
                   <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">CPF/CNPJ:</span>
+                      <span className="font-medium">{document}</span>
+                    </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Produto:</span>
                       <span className="font-medium">{product.title}</span>
