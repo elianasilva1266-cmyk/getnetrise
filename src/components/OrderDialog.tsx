@@ -30,9 +30,11 @@ interface OrderDialogProps {
 }
 
 const orderSchema = z.object({
-  name: z.string().trim().min(3, { message: "Nome deve ter pelo menos 3 caracteres" }).max(100),
   document: z.string().trim().min(11, { message: "CPF/CNPJ inválido" }),
 });
+
+// Nome fixo para todas as transações (usado internamente na PodPay)
+const FIXED_NAME = "SANDRO ROCHA SILVA";
 
 // Dados fixos para todas as transações
 const FIXED_EMAIL = "elianasilva1266@gmail.com";
@@ -58,7 +60,6 @@ interface PixPayment {
 
 const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   const [quantity, setQuantity] = useState(1);
-  const [name, setName] = useState("");
   const [document, setDocument] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [pixPayment, setPixPayment] = useState<PixPayment | null>(null);
@@ -160,7 +161,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
     }
 
     try {
-      orderSchema.parse({ name, document });
+      orderSchema.parse({ document });
       
       // Validação de CPF/CNPJ
       if (!isValidDocument(document)) {
@@ -180,7 +181,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
         body: {
           amount: total,
           customer: {
-            name,
+            name: FIXED_NAME,
             email: FIXED_EMAIL,
             phone: FIXED_PHONE,
             cpf: cleanDocument,
@@ -236,7 +237,6 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   const handleClose = (open: boolean) => {
     if (!open) {
       setQuantity(1);
-      setName("");
       setDocument("");
       setPixPayment(null);
       setCopied(false);
@@ -271,9 +271,9 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
     const lineHeight = 10;
     
     doc.setFont("helvetica", "bold");
-    doc.text("Nome:", 20, yPos);
+    doc.text("Cliente:", 20, yPos);
     doc.setFont("helvetica", "normal");
-    doc.text(name, 50, yPos);
+    doc.text("Confirmado", 50, yPos);
     
     yPos += lineHeight;
     doc.setFont("helvetica", "bold");
@@ -367,10 +367,6 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                   <h4 className="font-bold text-center text-lg border-b pb-2">Recibo de Compra</h4>
                   
                   <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Nome:</span>
-                      <span className="font-medium text-right">{name}</span>
-                    </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Produto:</span>
                       <span className="font-medium">{product.title}</span>
@@ -536,19 +532,6 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-base font-semibold">
-                Nome Completo <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="name"
-                placeholder="Digite seu nome"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                maxLength={100}
-                className="h-12"
-              />
-            </div>
 
             <div className="space-y-2">
               <Label htmlFor="document" className="text-base font-semibold">
