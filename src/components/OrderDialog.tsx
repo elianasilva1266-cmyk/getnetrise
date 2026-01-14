@@ -5,6 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +58,14 @@ interface PixPayment {
   amount: number;
   qrCode: string;
 }
+
+// Formata o valor de forma segura
+const safeFormatCurrency = (value: number | undefined | null): string => {
+  if (value === undefined || value === null || isNaN(value)) {
+    return "0,00";
+  }
+  return formatCurrency(value);
+};
 
 const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   const [quantity, setQuantity] = useState(1);
@@ -303,7 +312,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
     doc.setFont("helvetica", "bold");
     doc.text("VALOR PAGO:", 20, yPos);
     doc.setTextColor(34, 139, 34); // Verde
-    doc.text(`R$ ${formatCurrency(pixPayment?.amount ?? 0)}`, pageWidth - 20, yPos, { align: "right" });
+    doc.text(`R$ ${safeFormatCurrency(pixPayment?.amount)}`, pageWidth - 20, yPos, { align: "right" });
     
     // Reset cor
     doc.setTextColor(0, 0, 0);
@@ -389,7 +398,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                     <div className="flex justify-between items-center">
                       <span className="font-semibold text-lg">Valor Pago:</span>
                       <span className="font-bold text-green-600 text-2xl">
-                        R$ {formatCurrency(pixPayment.amount ?? 0)}
+                        R$ {safeFormatCurrency(pixPayment.amount)}
                       </span>
                     </div>
                   </div>
@@ -455,7 +464,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Valor:</span>
                     <span className="font-bold text-secondary text-xl">
-                      R$ {formatCurrency(pixPayment.amount ?? 0)}
+                      R$ {safeFormatCurrency(pixPayment.amount)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
@@ -559,7 +568,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                 Total:
               </span>
               <span className="text-3xl font-bold text-secondary">
-                R$ {formatCurrency(total)}
+                R$ {safeFormatCurrency(total)}
               </span>
             </div>
 
