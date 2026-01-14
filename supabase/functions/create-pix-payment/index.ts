@@ -24,10 +24,10 @@ serve(async (req) => {
   }
 
   try {
-    const podPayApiKey = Deno.env.get('PODPAY_API_KEY');
+    const risePayToken = Deno.env.get('RISEPAY_PRIVATE_TOKEN');
     
-    if (!podPayApiKey) {
-      console.error('PODPAY_API_KEY not configured');
+    if (!risePayToken) {
+      console.error('RISEPAY_PRIVATE_TOKEN not configured');
       return new Response(
         JSON.stringify({ success: false, message: 'Token de pagamento não configurado' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -40,21 +40,20 @@ serve(async (req) => {
     if (body.checkStatus && body.identifier) {
       console.log('Checking payment status for:', body.identifier);
 
-      const response = await fetch(`https://api.podpay.app/v1/transactions/${body.identifier}`, {
+      const response = await fetch(`https://api.risepay.com.br/api/External/Transactions/${body.identifier}`, {
         method: 'GET',
         headers: {
-          'x-api-key': podPayApiKey,
+          'Authorization': risePayToken,
           'Content-Type': 'application/json',
         },
       });
 
       const responseData = await response.json().catch(() => null);
-      console.log('PodPay status response:', JSON.stringify(responseData));
+      console.log('RisePay status response:', JSON.stringify(responseData));
 
       // IMPORTANT: always return 200 so the client polling doesn't throw
       if (!response.ok || !responseData?.success) {
         const message =
-          responseData?.error?.message ||
           responseData?.message ||
           `Falha ao verificar status (HTTP ${response.status})`;
 
@@ -71,15 +70,16 @@ serve(async (req) => {
         );
       }
 
-      const transactionData = responseData.data;
+      const transactionData = responseData.object;
 
-      // Map PodPay status to UI-friendly values
-      const podpayStatus: string = transactionData?.status;
-      const status = podpayStatus === 'paid'
+      // Map RisePay status to UI-friendly values
+      // RisePay uses: "Waiting Payment", "Paid", etc.
+      const risePayStatus: string = transactionData?.status;
+      const status = risePayStatus === 'Paid'
         ? 'Paid'
-        : podpayStatus === 'pending'
+        : risePayStatus === 'Waiting Payment'
           ? 'Waiting Payment'
-          : podpayStatus;
+          : risePayStatus;
 
       return new Response(
         JSON.stringify({
@@ -103,51 +103,33 @@ serve(async (req) => {
       );
     }
 
-    console.log('Creating PIX payment:', { amount, customerName: customer.name });
+    console.log('Creating PIX payment with RisePay:', { amount, customerName: customer.name });
 
-    // Detectar se é CPF (11 dígitos) ou CNPJ (14 dígitos)
+    // Limpar CPF/CNPJ - remover caracteres não numéricos
     const documentNumbers = customer.cpf.replace(/\D/g, '');
-    const isCnpj = documentNumbers.length === 14;
-    const documentType = isCnpj ? 'cnpj' : 'cpf';
-
-    // Gerar número do produto aleatório entre 1 e 20
-    const productNumber = Math.floor(Math.random() * 20) + 1;
-    const productTitle = `Produto ${productNumber}`;
     
-    console.log('Product title:', productTitle);
-    console.log('Document type:', documentType, '- Number:', documentNumbers);
-
-    // Converter valor para centavos (PodPay usa centavos)
-    const amountInCents = Math.round(amount * 100);
+    console.log('Document number:', documentNumbers);
 
     const requestBody = {
-      paymentMethod: 'pix',
-      amount: amountInCents,
+      amount: amount,
+      payment: {
+        method: 'pix',
+        expiresAt: 48, // 48 hours expiration
+      },
       customer: {
-        document: {
-          type: documentType,
-          number: documentNumbers,
-        },
         name: customer.name,
         email: customer.email || '',
+        cpf: documentNumbers,
         phone: customer.phone || '',
       },
-      items: [
-        {
-          title: productTitle,
-          unitPrice: amountInCents,
-          quantity: 1,
-          tangible: true,
-        }
-      ]
     };
 
-    console.log('PodPay request body:', JSON.stringify(requestBody));
+    console.log('RisePay request body:', JSON.stringify(requestBody));
 
-    const response = await fetch('https://api.podpay.app/v1/transactions', {
+    const response = await fetch('https://api.risepay.com.br/api/External/Transactions', {
       method: 'POST',
       headers: {
-        'x-api-key': podPayApiKey,
+        'Authorization': risePayToken,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestBody),
@@ -155,7 +137,7 @@ serve(async (req) => {
 
     const responseData = await response.json();
 
-    console.log('PodPay response:', JSON.stringify(responseData));
+    console.log('RisePay response:', JSON.stringify(responseData));
 
     if (!response.ok || !responseData.success) {
       return new Response(
@@ -167,18 +149,19 @@ serve(async (req) => {
       );
     }
 
-    // PodPay wraps the transaction data inside responseData.data
-    const transactionData = responseData.data;
+    // RisePay wraps the transaction data inside responseData.object
+    const transactionData = responseData.object;
 
     return new Response(
       JSON.stringify({
         success: true,
         data: {
-          identifier: transactionData.id,
+          identifier: transactionData.identifier,
           status: transactionData.status,
           amount: transactionData.amount,
-          qrCode: transactionData.pixQrCode,
-          qrCodeImage: transactionData.pixQrCodeImage,
+          qrCode: transactionData.pix?.qrCode,
+          // RisePay doesn't provide qrCodeImage, we'll generate it client-side
+          qrCodeImage: null,
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
