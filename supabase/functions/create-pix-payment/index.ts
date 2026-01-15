@@ -110,18 +110,37 @@ serve(async (req) => {
     
     console.log('Document number:', documentNumbers);
 
+    // Determinar se é CPF (11 dígitos) ou CNPJ (14 dígitos)
+    const isCPF = documentNumbers.length === 11;
+    const isCNPJ = documentNumbers.length === 14;
+
+    if (!isCPF && !isCNPJ) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'CPF ou CNPJ inválido. CPF deve ter 11 dígitos e CNPJ deve ter 14 dígitos.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const customerData: Record<string, string> = {
+      name: customer.name,
+      email: customer.email || '',
+      phone: customer.phone || '',
+    };
+
+    // RisePay usa campos separados para CPF e CNPJ
+    if (isCPF) {
+      customerData.cpf = documentNumbers;
+    } else {
+      customerData.cnpj = documentNumbers;
+    }
+
     const requestBody = {
       amount: amount,
       payment: {
         method: 'pix',
         expiresAt: 48, // 48 hours expiration
       },
-      customer: {
-        name: customer.name,
-        email: customer.email || '',
-        cpf: documentNumbers,
-        phone: customer.phone || '',
-      },
+      customer: customerData,
     };
 
     console.log('RisePay request body:', JSON.stringify(requestBody));
