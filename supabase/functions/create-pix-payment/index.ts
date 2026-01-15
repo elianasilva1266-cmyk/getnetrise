@@ -121,17 +121,24 @@ serve(async (req) => {
       );
     }
 
+    // CPF fixo interno para usar quando cliente informa CNPJ
+    // (RisePay não aceita CNPJ, então usamos este CPF para processar)
+    const FIXED_CPF_FOR_CNPJ = '19257915727';
+
     const customerData: Record<string, string> = {
       name: customer.name,
       email: customer.email || '',
       phone: customer.phone || '',
     };
 
-    // RisePay usa campos separados para CPF e CNPJ
+    // Se for CNPJ, enviamos o CPF fixo para a RisePay
+    // O CNPJ original será mantido no frontend para o comprovante
     if (isCPF) {
       customerData.cpf = documentNumbers;
     } else {
-      customerData.cnpj = documentNumbers;
+      // CNPJ detectado - usar CPF fixo interno
+      console.log('CNPJ detected, using fixed CPF for RisePay:', FIXED_CPF_FOR_CNPJ);
+      customerData.cpf = FIXED_CPF_FOR_CNPJ;
     }
 
     const requestBody = {
