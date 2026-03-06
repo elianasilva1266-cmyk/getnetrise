@@ -9,14 +9,20 @@ interface ProductCardProps {
   price: string;
   image: string;
   size: string;
+  originalPrice?: string;
 }
 
-const ProductCard = ({ title, price, image, size }: ProductCardProps) => {
+const ProductCard = ({ title, price, image, size, originalPrice }: ProductCardProps) => {
   const [orderDialogOpen, setOrderDialogOpen] = useState(false);
 
   return (
     <>
-      <Card className="group overflow-hidden transition-all duration-300 hover:shadow-xl animate-fade-in bg-card">
+      <Card className="group overflow-hidden transition-all duration-300 hover:shadow-xl animate-fade-in bg-card relative">
+        {originalPrice && (
+          <div className="absolute top-3 right-3 z-10 bg-destructive text-destructive-foreground text-xs font-bold px-3 py-1 rounded-full animate-pulse">
+            PROMOÇÃO
+          </div>
+        )}
         <CardContent className="p-8">
           <div className="relative w-full aspect-square mb-6 mx-auto max-w-[240px]">
             <div className="absolute inset-0 rounded-full overflow-hidden bg-muted">
@@ -31,7 +37,12 @@ const ProductCard = ({ title, price, image, size }: ProductCardProps) => {
           
           <div className="text-center space-y-4">
             <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">{title}</h3>
-            <p className="text-3xl font-bold text-secondary">{price}</p>
+            <div>
+              {originalPrice && (
+                <p className="text-base text-muted-foreground line-through">{originalPrice}</p>
+              )}
+              <p className="text-3xl font-bold text-secondary">{price}</p>
+            </div>
             
             <Button
               type="button"
