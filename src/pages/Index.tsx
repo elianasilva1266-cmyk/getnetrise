@@ -91,6 +91,7 @@ const Index = () => {
                 title={product.title}
                 size={product.size}
                 price={product.price}
+                originalPrice={product.originalPrice}
                 image={product.image}
               />
             </div>
