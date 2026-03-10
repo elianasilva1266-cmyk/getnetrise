@@ -76,7 +76,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   const [paymentStatus, setPaymentStatus] = useState<"waiting" | "approved">("waiting");
   const [receiptId, setReceiptId] = useState("");
   const [productNumber, setProductNumber] = useState("");
-  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { toast } = useToast();
   const { isPaymentEnabled, showPanel, handleSecretClick, togglePayment, closePanel } = usePaymentKillswitch();
 
