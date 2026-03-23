@@ -1,42 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
-    --background: 0 0% 98%;
-    --foreground: 220 15% 15%;
+    --background: 210 20% 98%;
+    --foreground: 220 20% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 15% 15%;
+    --card-foreground: 220 20% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 15%;
+    --popover-foreground: 220 20% 10%;
 
-    --primary: 24 90% 55%;
+    --primary: 220 72% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 95% 45%;
+    --secondary: 160 60% 42%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 10% 50%;
+    --muted: 215 20% 95%;
+    --muted-foreground: 220 10% 46%;
 
-    --accent: 24 90% 55%;
+    --accent: 220 72% 50%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 24 90% 55%;
+    --border: 215 20% 90%;
+    --input: 215 20% 90%;
+    --ring: 220 72% 50%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -49,34 +47,34 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 220 15% 10%;
+    --background: 220 20% 7%;
     --foreground: 0 0% 95%;
 
-    --card: 220 15% 12%;
+    --card: 220 20% 10%;
     --card-foreground: 0 0% 95%;
 
-    --popover: 220 15% 12%;
+    --popover: 220 20% 10%;
     --popover-foreground: 0 0% 95%;
 
-    --primary: 24 90% 55%;
+    --primary: 220 72% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 95% 45%;
+    --secondary: 160 60% 42%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 15% 18%;
+    --muted: 220 20% 15%;
     --muted-foreground: 220 10% 60%;
 
-    --accent: 24 90% 55%;
+    --accent: 220 72% 55%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 15% 20%;
-    --input: 220 15% 20%;
-    --ring: 24 90% 55%;
-    
+    --border: 220 20% 18%;
+    --input: 220 20% 18%;
+    --ring: 220 72% 55%;
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -95,5 +93,10 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
   }
 }
