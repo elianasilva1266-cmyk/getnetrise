@@ -14,6 +14,7 @@ const Index = () => {
       title: "CAÇAMBA DE 3M³",
       size: "3m³",
       price: "R$ 240,00",
+      originalPrice: "R$ 290,00",
       image: cacamba3m,
     },
     {
