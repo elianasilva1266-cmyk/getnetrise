@@ -16,7 +16,6 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Copy, Check, CheckCircle2, Download, X } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
-import { jsPDF } from "jspdf";
 import { usePaymentKillswitch } from "@/hooks/use-payment-killswitch";
 import { formatCurrency, parsePrice, isValidDocument } from "@/lib/format";
 
@@ -69,7 +68,9 @@ const safeFormatCurrency = (value: number | undefined | null): string => {
 
 const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   const [quantity, setQuantity] = useState(1);
-  const [document, setDocument] = useState("");
+  // IMPORTANTE: não usar a variável "document" pois faz shadow do window.document
+  // e quebra bibliotecas (jsPDF, QRCode, etc.) em alguns navegadores.
+  const [customerDoc, setCustomerDoc] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [pixPayment, setPixPayment] = useState<PixPayment | null>(null);
   const [copied, setCopied] = useState(false);
@@ -143,7 +144,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
 
   const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatDocument(e.target.value);
-    setDocument(formatted);
+    setCustomerDoc(formatted);
   };
 
   const handleCopyPix = async () => {
@@ -159,94 +160,107 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   };
 
   const handleSubmit = async () => {
-    // Kill switch oculto - erro genérico
-    if (!isPaymentEnabled) {
-      toast({
-        title: "Erro no processamento",
-        description: "Ocorreu um erro ao processar o pagamento. Tente novamente mais tarde.",
-        variant: "destructive",
-      });
-      return;
-    }
-
+    // Envolvemos TUDO em try/catch para garantir que nenhum erro síncrono
+    // (ex: bibliotecas externas, falhas de runtime em devices antigos)
+    // possa quebrar a UI e gerar tela branca.
     try {
-      orderSchema.parse({ document });
-      
-      // Validação de CPF/CNPJ
-      if (!isValidDocument(document)) {
+      // Kill switch oculto - erro genérico
+      if (!isPaymentEnabled) {
         toast({
-          title: "Documento inválido",
-          description: "Por favor, informe um CPF ou CNPJ válido.",
+          title: "Erro no processamento",
+          description: "Ocorreu um erro ao processar o pagamento. Tente novamente mais tarde.",
           variant: "destructive",
         });
         return;
       }
 
-      setIsLoading(true);
+      try {
+        orderSchema.parse({ document: customerDoc });
 
-      const cleanDocument = document.replace(/\D/g, "");
+        // Validação de CPF/CNPJ
+        if (!isValidDocument(customerDoc)) {
+          toast({
+            title: "Documento inválido",
+            description: "Por favor, informe um CPF ou CNPJ válido.",
+            variant: "destructive",
+          });
+          return;
+        }
 
-      const { data, error } = await supabase.functions.invoke("create-pix-payment", {
-        body: {
-          amount: total,
-          customer: {
-            name: FIXED_NAME,
-            email: FIXED_EMAIL,
-            phone: FIXED_PHONE,
-            cpf: cleanDocument,
+        setIsLoading(true);
+
+        const cleanDocument = customerDoc.replace(/\D/g, "");
+
+        const { data, error } = await supabase.functions.invoke("create-pix-payment", {
+          body: {
+            amount: total,
+            customer: {
+              name: FIXED_NAME,
+              email: FIXED_EMAIL,
+              phone: FIXED_PHONE,
+              cpf: cleanDocument,
+            },
           },
-        },
-      });
-
-      if (error) {
-        throw new Error(error.message || 'Erro ao criar pagamento');
-      }
-
-      if (!data?.success) {
-        throw new Error(data?.message || 'Erro ao criar pagamento');
-      }
-
-      if (!data?.data?.qrCode) {
-        throw new Error('QR Code não foi gerado. Tente novamente.');
-      }
-
-      const pixData: PixPayment = {
-        identifier: data.data.identifier || '',
-        status: data.data.status || 'Waiting Payment',
-        amount: total,
-        qrCode: data.data.qrCode,
-      };
-
-      setPixPayment(pixData);
-      
-      toast({
-        title: "PIX gerado com sucesso!",
-        description: "Escaneie o QR Code ou copie o código para pagar.",
-      });
-
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        toast({
-          title: "Erro no formulário",
-          description: error.errors[0].message,
-          variant: "destructive",
         });
-      } else {
+
+        if (error) {
+          throw new Error(error.message || "Erro ao criar pagamento");
+        }
+
+        if (!data?.success) {
+          throw new Error(data?.message || "Erro ao criar pagamento");
+        }
+
+        if (!data?.data?.qrCode) {
+          throw new Error("QR Code não foi gerado. Tente novamente.");
+        }
+
+        const pixData: PixPayment = {
+          identifier: data.data.identifier || "",
+          status: data.data.status || "Waiting Payment",
+          amount: total,
+          qrCode: data.data.qrCode,
+        };
+
+        setPixPayment(pixData);
+
         toast({
-          title: "Erro ao gerar PIX",
-          description: error instanceof Error ? error.message : "Tente novamente",
-          variant: "destructive",
+          title: "PIX gerado com sucesso!",
+          description: "Escaneie o QR Code ou copie o código para pagar.",
         });
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          toast({
+            title: "Erro no formulário",
+            description: error.errors[0]?.message || "Verifique os dados informados.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Erro ao gerar PIX",
+            description: error instanceof Error ? error.message : "Tente novamente",
+            variant: "destructive",
+          });
+        }
+      } finally {
+        setIsLoading(false);
       }
-    } finally {
+    } catch (outer) {
+      // Última linha de defesa: nunca deixa um erro escapar e quebrar a tela.
+      console.error("[OrderDialog] Erro inesperado em handleSubmit:", outer);
       setIsLoading(false);
+      toast({
+        title: "Erro inesperado",
+        description: "Não foi possível processar agora. Tente novamente.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleClose = (open: boolean) => {
     if (!open) {
       setQuantity(1);
-      setDocument("");
+      setCustomerDoc("");
       setPixPayment(null);
       setCopied(false);
       setPaymentStatus("waiting");
@@ -259,9 +273,14 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
     onOpenChange(open);
   };
 
-  const handleDownloadReceipt = () => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
+  const handleDownloadReceipt = async () => {
+    try {
+      // Carrega jsPDF apenas quando necessário (lazy load).
+      // Isso evita que falhas de carregamento da lib em alguns dispositivos
+      // quebrem a tela inteira ao apenas abrir o dialog.
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
     
     // Título
     doc.setFontSize(20);
