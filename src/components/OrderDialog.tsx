@@ -580,7 +580,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
               <Input
                 id="document"
                 placeholder="000.000.000-00 ou 00.000.000/0000-00"
-                value={document}
+                value={customerDoc}
                 onChange={handleDocumentChange}
                 maxLength={18}
                 className="h-12"
