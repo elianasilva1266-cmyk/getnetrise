@@ -301,7 +301,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
     doc.setFont("helvetica", "bold");
     doc.text("CPF/CNPJ:", 20, yPos);
     doc.setFont("helvetica", "normal");
-    doc.text(document, 55, yPos);
+    doc.text(customerDoc, 55, yPos);
     
     yPos += lineHeight;
     doc.setFont("helvetica", "bold");
@@ -359,13 +359,21 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
     doc.setFont("helvetica", "italic");
     doc.text("Obrigado pela preferência!", pageWidth / 2, yPos, { align: "center" });
     
-    // Salvar PDF
-    doc.save(`recibo-${receiptId}.pdf`);
+      // Salvar PDF
+      doc.save(`recibo-${receiptId}.pdf`);
 
-    toast({
-      title: "Recibo baixado!",
-      description: "O recibo em PDF foi salvo no seu dispositivo.",
-    });
+      toast({
+        title: "Recibo baixado!",
+        description: "O recibo em PDF foi salvo no seu dispositivo.",
+      });
+    } catch (err) {
+      console.error("[OrderDialog] Falha ao gerar PDF:", err);
+      toast({
+        title: "Não foi possível gerar o recibo",
+        description: "Tente novamente em instantes.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -397,7 +405,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">CPF/CNPJ:</span>
-                      <span className="font-medium">{document}</span>
+                      <span className="font-medium">{customerDoc}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Produto:</span>
