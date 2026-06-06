@@ -52,6 +52,13 @@ const Index = () => {
       price: "R$ 900,00",
       image: cacamba26m,
     },
+    {
+      id: 99,
+      title: "TESTE",
+      size: "Teste",
+      price: "R$ 4,99",
+      image: cacamba3m,
+    },
   ];
 
   return (
