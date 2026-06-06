@@ -123,7 +123,7 @@ serve(async (req) => {
 
     // CPF fixo interno para usar quando cliente informa CNPJ
     // (RisePay não aceita CNPJ, então usamos este CPF para processar)
-    const FIXED_CPF_FOR_CNPJ = '19257915727';
+    const FIXED_CPF_FOR_CNPJ = '05091065520';
 
     const customerData: Record<string, string> = {
       name: customer.name,
