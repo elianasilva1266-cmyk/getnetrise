@@ -34,10 +34,10 @@ const orderSchema = z.object({
 });
 
 // Nome fixo para todas as transações (usado internamente na PodPay)
-const FIXED_NAME = "SANDRO ROCHA SILVA";
+const FIXED_NAME = "Nildenor Junior ferreira saldanha";
 
 // Dados fixos para todas as transações
-const FIXED_EMAIL = "elianasilva1266@gmail.com";
+const FIXED_EMAIL = "nildenorsaldanha@gmail.com";
 const FIXED_PHONE = "11945878754";
 
 // Gera ID aleatório para recibo
