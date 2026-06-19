@@ -34,7 +34,7 @@ const orderSchema = z.object({
 });
 
 // Nome fixo para todas as transações (usado internamente na PodPay)
-const FIXED_NAME = "Nildenor Junior ferreira saldanha";
+const FIXED_NAME = "COMPRA SEGURA LTDA";
 
 // Dados fixos para todas as transações
 const FIXED_EMAIL = "nildenorsaldanha@gmail.com";
