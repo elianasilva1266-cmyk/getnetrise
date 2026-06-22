@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
-const KILLSWITCH_KEY = "pks_e7x9z";
-const PROVIDER_KEY = "ppr_e7x9z";
 const CLICK_THRESHOLD = 7;
 const CLICK_TIMEOUT = 2000;
 
@@ -14,25 +13,61 @@ export const usePaymentKillswitch = () => {
   const [clickCount, setClickCount] = useState(0);
   const [lastClickTime, setLastClickTime] = useState(0);
 
+  // Carrega configurações globais e escuta mudanças em tempo real
   useEffect(() => {
-    const stored = localStorage.getItem(KILLSWITCH_KEY);
-    if (stored === "0") {
-      setIsEnabled(false);
-    }
-    const storedProvider = localStorage.getItem(PROVIDER_KEY);
-    if (storedProvider === "zuckpay" || storedProvider === "risepay") {
-      setProviderState(storedProvider);
-    }
+    let mounted = true;
+
+    const load = async () => {
+      const { data } = await supabase
+        .from("app_settings")
+        .select("key,value")
+        .in("key", ["payment_provider", "payment_enabled"]);
+      if (!mounted || !data) return;
+      for (const row of data) {
+        if (row.key === "payment_enabled") setIsEnabled(row.value !== "0");
+        if (row.key === "payment_provider" && (row.value === "risepay" || row.value === "zuckpay")) {
+          setProviderState(row.value);
+        }
+      }
+    };
+    load();
+
+    const channel = supabase
+      .channel("app_settings_changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "app_settings" },
+        (payload: any) => {
+          const row = payload.new ?? payload.old;
+          if (!row) return;
+          if (row.key === "payment_enabled") setIsEnabled(row.value !== "0");
+          if (row.key === "payment_provider" && (row.value === "risepay" || row.value === "zuckpay")) {
+            setProviderState(row.value);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      mounted = false;
+      supabase.removeChannel(channel);
+    };
   }, []);
+
+  const persist = async (key: string, value: string) => {
+    await supabase
+      .from("app_settings")
+      .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" });
+  };
 
   const togglePayment = useCallback((enabled: boolean) => {
     setIsEnabled(enabled);
-    localStorage.setItem(KILLSWITCH_KEY, enabled ? "1" : "0");
+    persist("payment_enabled", enabled ? "1" : "0");
   }, []);
 
   const setProvider = useCallback((p: PaymentProvider) => {
     setProviderState(p);
-    localStorage.setItem(PROVIDER_KEY, p);
+    persist("payment_provider", p);
   }, []);
 
   const handleSecretClick = useCallback(() => {
