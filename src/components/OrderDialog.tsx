@@ -127,25 +127,34 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   }, [pixPayment, paymentStatus, toast]);
 
   const formatDocument = (value: string) => {
-    const numbers = value.replace(/\D/g, "");
-    
-    if (numbers.length <= 11) {
-      return numbers
-        .replace(/(\d{3})(\d)/, "$1.$2")
-        .replace(/(\d{3})(\d)/, "$1.$2")
-        .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-    } else {
+    try {
+      const numbers = (value ?? "").toString().replace(/\D/g, "").slice(0, 14);
+
+      if (numbers.length <= 11) {
+        return numbers
+          .replace(/(\d{3})(\d)/, "$1.$2")
+          .replace(/(\d{3})(\d)/, "$1.$2")
+          .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+      }
       return numbers
         .replace(/(\d{2})(\d)/, "$1.$2")
         .replace(/(\d{3})(\d)/, "$1.$2")
         .replace(/(\d{3})(\d)/, "$1/$2")
         .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+    } catch (err) {
+      console.error("[OrderDialog] formatDocument falhou:", err);
+      return (value ?? "").toString().replace(/\D/g, "").slice(0, 14);
     }
   };
 
   const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatDocument(e.target.value);
-    setCustomerDoc(formatted);
+    try {
+      const formatted = formatDocument(e.target.value);
+      setCustomerDoc(formatted);
+    } catch (err) {
+      console.error("[OrderDialog] handleDocumentChange falhou:", err);
+      setCustomerDoc((e.target.value ?? "").toString().replace(/\D/g, "").slice(0, 14));
+    }
   };
 
   const handleCopyPix = async () => {
