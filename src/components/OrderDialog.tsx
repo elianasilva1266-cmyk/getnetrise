@@ -79,7 +79,8 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   const [productNumber, setProductNumber] = useState("");
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { toast } = useToast();
-  const { isPaymentEnabled, showPanel, handleSecretClick, togglePayment, closePanel } = usePaymentKillswitch();
+  const { isPaymentEnabled, provider, setProvider, showPanel, handleSecretClick, togglePayment, closePanel } = usePaymentKillswitch();
+  const fnName = provider === "zuckpay" ? "create-zuckpay-payment" : "create-pix-payment";
 
   const priceValue = parsePrice(product.price);
   const total = priceValue * quantity;
