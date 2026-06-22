@@ -192,7 +192,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
 
         const cleanDocument = customerDoc.replace(/\D/g, "");
 
-        const { data, error } = await supabase.functions.invoke("create-pix-payment", {
+        const { data, error } = await supabase.functions.invoke(fnName, {
           body: {
             amount: total,
             customer: {
