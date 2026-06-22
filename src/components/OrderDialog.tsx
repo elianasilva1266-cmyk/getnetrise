@@ -620,6 +620,28 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                   <div className="text-xs text-muted-foreground">
                     {isPaymentEnabled ? "Ativo" : "Desativado - erro genérico será exibido"}
                   </div>
+                  <div className="space-y-2 pt-3 border-t">
+                    <span className="text-sm font-medium">Provedor PIX</span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setProvider("risepay")}
+                        className={`p-2 rounded-md border text-sm ${provider === "risepay" ? "border-secondary bg-secondary/10 text-secondary font-semibold" : "border-border"}`}
+                      >
+                        RisePay
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setProvider("zuckpay")}
+                        className={`p-2 rounded-md border text-sm ${provider === "zuckpay" ? "border-secondary bg-secondary/10 text-secondary font-semibold" : "border-border"}`}
+                      >
+                        ZuckPay
+                      </button>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Atual: <span className="font-mono">{provider}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
