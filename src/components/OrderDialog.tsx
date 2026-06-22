@@ -90,7 +90,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
     if (pixPayment && paymentStatus === "waiting") {
       pollingRef.current = setInterval(async () => {
         try {
-          const { data, error } = await supabase.functions.invoke("create-pix-payment", {
+          const { data, error } = await supabase.functions.invoke(fnName, {
             body: {
               checkStatus: true,
               identifier: pixPayment.identifier,
