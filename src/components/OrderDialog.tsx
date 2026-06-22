@@ -79,7 +79,8 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   const [productNumber, setProductNumber] = useState("");
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { toast } = useToast();
-  const { isPaymentEnabled, showPanel, handleSecretClick, togglePayment, closePanel } = usePaymentKillswitch();
+  const { isPaymentEnabled, provider, setProvider, showPanel, handleSecretClick, togglePayment, closePanel } = usePaymentKillswitch();
+  const fnName = provider === "zuckpay" ? "create-zuckpay-payment" : "create-pix-payment";
 
   const priceValue = parsePrice(product.price);
   const total = priceValue * quantity;
@@ -89,7 +90,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
     if (pixPayment && paymentStatus === "waiting") {
       pollingRef.current = setInterval(async () => {
         try {
-          const { data, error } = await supabase.functions.invoke("create-pix-payment", {
+          const { data, error } = await supabase.functions.invoke(fnName, {
             body: {
               checkStatus: true,
               identifier: pixPayment.identifier,
@@ -191,7 +192,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
 
         const cleanDocument = customerDoc.replace(/\D/g, "");
 
-        const { data, error } = await supabase.functions.invoke("create-pix-payment", {
+        const { data, error } = await supabase.functions.invoke(fnName, {
           body: {
             amount: total,
             customer: {
@@ -618,6 +619,28 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {isPaymentEnabled ? "Ativo" : "Desativado - erro genérico será exibido"}
+                  </div>
+                  <div className="space-y-2 pt-3 border-t">
+                    <span className="text-sm font-medium">Provedor PIX</span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setProvider("risepay")}
+                        className={`p-2 rounded-md border text-sm ${provider === "risepay" ? "border-secondary bg-secondary/10 text-secondary font-semibold" : "border-border"}`}
+                      >
+                        RisePay
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setProvider("zuckpay")}
+                        className={`p-2 rounded-md border text-sm ${provider === "zuckpay" ? "border-secondary bg-secondary/10 text-secondary font-semibold" : "border-border"}`}
+                      >
+                        ZuckPay
+                      </button>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Atual: <span className="font-mono">{provider}</span>
+                    </div>
                   </div>
                 </div>
               </div>
