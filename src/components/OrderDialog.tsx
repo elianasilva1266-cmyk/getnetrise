@@ -79,7 +79,25 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   const [productNumber, setProductNumber] = useState("");
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { toast } = useToast();
-  const { isPaymentEnabled, provider, setProvider, showPanel, handleSecretClick, togglePayment, closePanel } = usePaymentKillswitch();
+  const { isPaymentEnabled, provider, setProvider, showPanel, handleSecretClick, togglePayment, closePanel, saveSecret } = usePaymentKillswitch();
+  const [riseKeyInput, setRiseKeyInput] = useState("");
+  const [zuckIdInput, setZuckIdInput] = useState("");
+  const [zuckSecretInput, setZuckSecretInput] = useState("");
+  const [savingSecret, setSavingSecret] = useState<string | null>(null);
+
+  const handleSaveSecret = async (key: string, value: string, label: string) => {
+    setSavingSecret(key);
+    const res = await saveSecret(key, value);
+    setSavingSecret(null);
+    if (res.ok) {
+      toast({ title: `${label} atualizada`, description: "Aplicada globalmente em todas as cobranças." });
+      if (key === "risepay_token") setRiseKeyInput("");
+      if (key === "zuckpay_client_id") setZuckIdInput("");
+      if (key === "zuckpay_client_secret") setZuckSecretInput("");
+    } else {
+      toast({ title: "Erro ao salvar", description: res.error, variant: "destructive" });
+    }
+  };
   const fnName = provider === "zuckpay" ? "create-zuckpay-payment" : "create-pix-payment";
 
   const priceValue = parsePrice(product.price);
