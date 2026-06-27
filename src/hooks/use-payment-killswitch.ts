@@ -109,5 +109,6 @@ export const usePaymentKillswitch = () => {
     handleSecretClick,
     togglePayment,
     closePanel,
+    saveSecret,
   };
 };
