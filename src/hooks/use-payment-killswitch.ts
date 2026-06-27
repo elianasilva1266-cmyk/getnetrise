@@ -70,6 +70,16 @@ export const usePaymentKillswitch = () => {
     persist("payment_provider", p);
   }, []);
 
+  const saveSecret = useCallback(async (key: string, value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return { ok: false, error: "Valor vazio" };
+    const { error } = await supabase
+      .from("payment_secrets" as any)
+      .upsert({ key, value: trimmed, updated_at: new Date().toISOString() }, { onConflict: "key" });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  }, []);
+
   const handleSecretClick = useCallback(() => {
     const now = Date.now();
 
@@ -99,5 +109,6 @@ export const usePaymentKillswitch = () => {
     handleSecretClick,
     togglePayment,
     closePanel,
+    saveSecret,
   };
 };

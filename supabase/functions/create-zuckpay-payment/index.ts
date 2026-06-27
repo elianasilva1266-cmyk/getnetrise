@@ -43,8 +43,27 @@ serve(async (req) => {
   }
 
   try {
-    const clientId = Deno.env.get("ZUCKPAY_CLIENT_ID");
-    const clientSecret = Deno.env.get("ZUCKPAY_CLIENT_SECRET");
+    let clientId = Deno.env.get("ZUCKPAY_CLIENT_ID") || '';
+    let clientSecret = Deno.env.get("ZUCKPAY_CLIENT_SECRET") || '';
+
+    try {
+      const supaUrl = Deno.env.get('SUPABASE_URL');
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      if (supaUrl && serviceKey) {
+        const r = await fetch(`${supaUrl}/rest/v1/payment_secrets?key=in.(zuckpay_client_id,zuckpay_client_secret)&select=key,value`, {
+          headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+        });
+        const rows = await r.json().catch(() => []);
+        if (Array.isArray(rows)) {
+          for (const row of rows) {
+            if (row.key === 'zuckpay_client_id' && row.value) clientId = row.value;
+            if (row.key === 'zuckpay_client_secret' && row.value) clientSecret = row.value;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Falha ao ler payment_secrets, usando env:', e);
+    }
 
     if (!clientId || !clientSecret) {
       console.error("ZUCKPAY credentials not configured");

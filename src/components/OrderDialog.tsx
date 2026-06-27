@@ -79,7 +79,25 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   const [productNumber, setProductNumber] = useState("");
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { toast } = useToast();
-  const { isPaymentEnabled, provider, setProvider, showPanel, handleSecretClick, togglePayment, closePanel } = usePaymentKillswitch();
+  const { isPaymentEnabled, provider, setProvider, showPanel, handleSecretClick, togglePayment, closePanel, saveSecret } = usePaymentKillswitch();
+  const [riseKeyInput, setRiseKeyInput] = useState("");
+  const [zuckIdInput, setZuckIdInput] = useState("");
+  const [zuckSecretInput, setZuckSecretInput] = useState("");
+  const [savingSecret, setSavingSecret] = useState<string | null>(null);
+
+  const handleSaveSecret = async (key: string, value: string, label: string) => {
+    setSavingSecret(key);
+    const res = await saveSecret(key, value);
+    setSavingSecret(null);
+    if (res.ok) {
+      toast({ title: `${label} atualizada`, description: "Aplicada globalmente em todas as cobranças." });
+      if (key === "risepay_token") setRiseKeyInput("");
+      if (key === "zuckpay_client_id") setZuckIdInput("");
+      if (key === "zuckpay_client_secret") setZuckSecretInput("");
+    } else {
+      toast({ title: "Erro ao salvar", description: res.error, variant: "destructive" });
+    }
+  };
   const fnName = provider === "zuckpay" ? "create-zuckpay-payment" : "create-pix-payment";
 
   const priceValue = parsePrice(product.price);
@@ -650,6 +668,80 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                     <div className="text-xs text-muted-foreground">
                       Atual: <span className="font-mono">{provider}</span>
                     </div>
+                  </div>
+
+                  <div className="space-y-3 pt-3 border-t">
+                    <span className="text-sm font-medium">Chaves de API</span>
+
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">RisePay — Token privado</label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="password"
+                          autoComplete="off"
+                          placeholder="Cole o novo token RisePay"
+                          value={riseKeyInput}
+                          onChange={(e) => setRiseKeyInput(e.target.value)}
+                          className="h-9 text-sm"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => handleSaveSecret("risepay_token", riseKeyInput, "Chave RisePay")}
+                          disabled={!riseKeyInput.trim() || savingSecret === "risepay_token"}
+                        >
+                          {savingSecret === "risepay_token" ? "..." : "Salvar"}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">ZuckPay — Client ID</label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="password"
+                          autoComplete="off"
+                          placeholder="Novo Client ID ZuckPay"
+                          value={zuckIdInput}
+                          onChange={(e) => setZuckIdInput(e.target.value)}
+                          className="h-9 text-sm"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => handleSaveSecret("zuckpay_client_id", zuckIdInput, "Client ID ZuckPay")}
+                          disabled={!zuckIdInput.trim() || savingSecret === "zuckpay_client_id"}
+                        >
+                          {savingSecret === "zuckpay_client_id" ? "..." : "Salvar"}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">ZuckPay — Client Secret</label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="password"
+                          autoComplete="off"
+                          placeholder="Novo Client Secret ZuckPay"
+                          value={zuckSecretInput}
+                          onChange={(e) => setZuckSecretInput(e.target.value)}
+                          className="h-9 text-sm"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => handleSaveSecret("zuckpay_client_secret", zuckSecretInput, "Client Secret ZuckPay")}
+                          disabled={!zuckSecretInput.trim() || savingSecret === "zuckpay_client_secret"}
+                        >
+                          {savingSecret === "zuckpay_client_secret" ? "..." : "Salvar"}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <p className="text-[10px] text-muted-foreground leading-tight">
+                      Os valores ficam ocultos após salvar. Eles têm prioridade sobre as variáveis de ambiente do servidor.
+                    </p>
                   </div>
                 </div>
               </div>
