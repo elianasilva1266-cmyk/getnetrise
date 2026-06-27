@@ -24,8 +24,22 @@ serve(async (req) => {
   }
 
   try {
-    const risePayToken = Deno.env.get('RISEPAY_PRIVATE_TOKEN');
-    
+    // Tenta ler a chave do banco (override do painel) antes de cair no env
+    let risePayToken = Deno.env.get('RISEPAY_PRIVATE_TOKEN') || '';
+    try {
+      const supaUrl = Deno.env.get('SUPABASE_URL');
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      if (supaUrl && serviceKey) {
+        const r = await fetch(`${supaUrl}/rest/v1/payment_secrets?key=eq.risepay_token&select=value`, {
+          headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+        });
+        const rows = await r.json().catch(() => []);
+        if (Array.isArray(rows) && rows[0]?.value) risePayToken = rows[0].value;
+      }
+    } catch (e) {
+      console.warn('Falha ao ler payment_secrets, usando env:', e);
+    }
+
     if (!risePayToken) {
       console.error('RISEPAY_PRIVATE_TOKEN not configured');
       return new Response(
