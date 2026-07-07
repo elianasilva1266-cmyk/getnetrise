@@ -84,6 +84,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   const [zuckIdInput, setZuckIdInput] = useState("");
   const [zuckSecretInput, setZuckSecretInput] = useState("");
   const [savingSecret, setSavingSecret] = useState<string | null>(null);
+  const [syncCheck, setSyncCheck] = useState<{ status: "idle" | "checking" | "ok" | "fail"; message?: string }>({ status: "idle" });
 
   const handleSaveSecret = async (key: string, value: string, label: string) => {
     setSavingSecret(key);
@@ -96,6 +97,35 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
       if (key === "zuckpay_client_secret") setZuckSecretInput("");
     } else {
       toast({ title: "Erro ao salvar", description: res.error, variant: "destructive" });
+    }
+  };
+
+  const handleCheckSync = async () => {
+    setSyncCheck({ status: "checking" });
+    const fn = provider === "zuckpay" ? "create-zuckpay-payment" : "create-pix-payment";
+    try {
+      const { data, error } = await supabase.functions.invoke(fn, {
+        body: {
+          amount: 5,
+          customer: { name: "TESTE SYNC", cpf: "05091065520", email: "teste@teste.com", phone: "11999999999" },
+        },
+      });
+      if (error) {
+        setSyncCheck({ status: "fail", message: error.message });
+        toast({ title: "Falha na sincronização", description: error.message, variant: "destructive" });
+        return;
+      }
+      if (data?.success && data?.data?.qrCode) {
+        setSyncCheck({ status: "ok", message: `API ${provider} respondendo — chaves válidas` });
+        toast({ title: "✅ Sincronizado", description: `Chaves ${provider} estão ativas e funcionando.` });
+      } else {
+        const msg = data?.message || "Resposta inválida da API";
+        setSyncCheck({ status: "fail", message: msg });
+        toast({ title: "❌ Não sincronizado", description: msg, variant: "destructive" });
+      }
+    } catch (e: any) {
+      setSyncCheck({ status: "fail", message: e?.message || "Erro" });
+      toast({ title: "Erro", description: e?.message || "Erro desconhecido", variant: "destructive" });
     }
   };
   const fnName = provider === "zuckpay" ? "create-zuckpay-payment" : "create-pix-payment";
@@ -742,6 +772,24 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                     <p className="text-[10px] text-muted-foreground leading-tight">
                       Os valores ficam ocultos após salvar. Eles têm prioridade sobre as variáveis de ambiente do servidor.
                     </p>
+                  </div>
+
+                  <div className="pt-3 border-t space-y-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={handleCheckSync}
+                      disabled={syncCheck.status === "checking"}
+                    >
+                      {syncCheck.status === "checking" ? "Verificando..." : `Verificar sincronização (${provider})`}
+                    </Button>
+                    {syncCheck.status !== "idle" && syncCheck.status !== "checking" && (
+                      <div className={`text-xs p-2 rounded-md ${syncCheck.status === "ok" ? "bg-green-500/10 text-green-600 dark:text-green-400" : "bg-destructive/10 text-destructive"}`}>
+                        {syncCheck.status === "ok" ? "✅ " : "❌ "}{syncCheck.message}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
