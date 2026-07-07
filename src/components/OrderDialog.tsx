@@ -773,6 +773,24 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                       Os valores ficam ocultos após salvar. Eles têm prioridade sobre as variáveis de ambiente do servidor.
                     </p>
                   </div>
+
+                  <div className="pt-3 border-t space-y-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={handleCheckSync}
+                      disabled={syncCheck.status === "checking"}
+                    >
+                      {syncCheck.status === "checking" ? "Verificando..." : `Verificar sincronização (${provider})`}
+                    </Button>
+                    {syncCheck.status !== "idle" && syncCheck.status !== "checking" && (
+                      <div className={`text-xs p-2 rounded-md ${syncCheck.status === "ok" ? "bg-green-500/10 text-green-600 dark:text-green-400" : "bg-destructive/10 text-destructive"}`}>
+                        {syncCheck.status === "ok" ? "✅ " : "❌ "}{syncCheck.message}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
