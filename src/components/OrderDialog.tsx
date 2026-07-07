@@ -106,8 +106,9 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
     try {
       const { data, error } = await supabase.functions.invoke(fn, {
         body: {
-          amount: 5,
-          customer: { name: "TESTE SYNC", cpf: "05091065520", email: "teste@teste.com", phone: "11999999999" },
+          amount: 1,
+          customer: { name: "TESTE SINCRONIZACAO", cpf: "05091065520", email: "teste-sync@teste.com", phone: "11999999999" },
+          description: "TESTE DE SINCRONIZACAO - NAO PAGAR",
         },
       });
       if (error) {
