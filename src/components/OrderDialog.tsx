@@ -80,10 +80,11 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   const [productNumber, setProductNumber] = useState("");
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { toast } = useToast();
-  const { isPaymentEnabled, provider, setProvider, showPanel, handleSecretClick, togglePayment, closePanel, saveSecret } = usePaymentKillswitch();
+  const { isPaymentEnabled, provider, setProvider, pixStaticKey, showPanel, handleSecretClick, togglePayment, closePanel, saveSecret } = usePaymentKillswitch();
   const [riseKeyInput, setRiseKeyInput] = useState("");
   const [zuckIdInput, setZuckIdInput] = useState("");
   const [zuckSecretInput, setZuckSecretInput] = useState("");
+  const [pixStaticKeyInput, setPixStaticKeyInput] = useState("");
   const [savingSecret, setSavingSecret] = useState<string | null>(null);
   const [syncCheck, setSyncCheck] = useState<{ status: "idle" | "checking" | "ok" | "fail"; message?: string }>({ status: "idle" });
 
