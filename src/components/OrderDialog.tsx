@@ -264,6 +264,32 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
 
         const cleanDocument = customerDoc.replace(/\D/g, "");
 
+        // PIX estático: gera BR Code localmente com a chave aleatória
+        if (provider === "pix_static") {
+          if (!pixStaticKey) {
+            throw new Error("Chave PIX estática não configurada");
+          }
+          const txid = `PED${Date.now().toString().slice(-10)}`;
+          const brCode = buildPixStatic({
+            key: pixStaticKey,
+            amount: total,
+            merchantName: FIXED_NAME,
+            merchantCity: "SAO PAULO",
+            txid,
+          });
+          setPixPayment({
+            identifier: txid,
+            status: "Waiting Payment",
+            amount: total,
+            qrCode: brCode,
+          });
+          toast({
+            title: "PIX gerado com sucesso!",
+            description: "Após pagar, clique em 'Já paguei' para confirmar.",
+          });
+          return;
+        }
+
         const { data, error } = await supabase.functions.invoke(fnName, {
           body: {
             amount: total,
