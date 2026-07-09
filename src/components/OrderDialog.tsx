@@ -97,6 +97,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
       if (key === "risepay_token") setRiseKeyInput("");
       if (key === "zuckpay_client_id") setZuckIdInput("");
       if (key === "zuckpay_client_secret") setZuckSecretInput("");
+      if (key === "pix_static_key") setPixStaticKeyInput("");
     } else {
       toast({ title: "Erro ao salvar", description: res.error, variant: "destructive" });
     }
