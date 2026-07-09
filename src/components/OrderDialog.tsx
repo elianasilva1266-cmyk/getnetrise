@@ -835,6 +835,30 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                       </div>
                     </div>
 
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">
+                        PIX Estático — Chave (atual: <span className="font-mono">{pixStaticKey ? pixStaticKey.slice(0, 8) + "…" : "—"}</span>)
+                      </label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="text"
+                          autoComplete="off"
+                          placeholder="Nova chave PIX (aleatória, CPF, e-mail, telefone)"
+                          value={pixStaticKeyInput}
+                          onChange={(e) => setPixStaticKeyInput(e.target.value)}
+                          className="h-9 text-sm"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => handleSaveSecret("pix_static_key", pixStaticKeyInput, "Chave PIX Estático")}
+                          disabled={!pixStaticKeyInput.trim() || savingSecret === "pix_static_key"}
+                        >
+                          {savingSecret === "pix_static_key" ? "..." : "Salvar"}
+                        </Button>
+                      </div>
+                    </div>
+
                     <p className="text-[10px] text-muted-foreground leading-tight">
                       Os valores ficam ocultos após salvar. Eles têm prioridade sobre as variáveis de ambiente do servidor.
                     </p>
