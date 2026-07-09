@@ -738,7 +738,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                   </div>
                   <div className="space-y-2 pt-3 border-t">
                     <span className="text-sm font-medium">Provedor PIX</span>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       <button
                         type="button"
                         onClick={() => setProvider("risepay")}
@@ -752,6 +752,13 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                         className={`p-2 rounded-md border text-sm ${provider === "zuckpay" ? "border-secondary bg-secondary/10 text-secondary font-semibold" : "border-border"}`}
                       >
                         ZuckPay
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setProvider("pix_static")}
+                        className={`p-2 rounded-md border text-sm ${provider === "pix_static" ? "border-secondary bg-secondary/10 text-secondary font-semibold" : "border-border"}`}
+                      >
+                        PIX Estático
                       </button>
                     </div>
                     <div className="text-xs text-muted-foreground">
