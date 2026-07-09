@@ -137,8 +137,9 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   const priceValue = parsePrice(product.price);
   const total = priceValue * quantity;
 
-  // Polling para verificar status do pagamento
+  // Polling para verificar status do pagamento (não roda em pix_static)
   useEffect(() => {
+    if (provider === "pix_static") return;
     if (pixPayment && paymentStatus === "waiting") {
       pollingRef.current = setInterval(async () => {
         try {
@@ -176,7 +177,17 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
         clearInterval(pollingRef.current);
       }
     };
-  }, [pixPayment, paymentStatus, toast]);
+  }, [pixPayment, paymentStatus, toast, provider, fnName]);
+
+  const handleManualConfirm = () => {
+    setPaymentStatus("approved");
+    setReceiptId(generateReceiptId());
+    setProductNumber(generateProductNumber());
+    toast({
+      title: "Pagamento registrado",
+      description: "Confirme o recebimento no seu app do banco.",
+    });
+  };
 
   const formatDocument = (value: string) => {
     try {
