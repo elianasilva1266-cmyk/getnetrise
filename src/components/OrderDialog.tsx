@@ -105,6 +105,20 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
 
   const handleCheckSync = async () => {
     setSyncCheck({ status: "checking" });
+    if (provider === "pix_static") {
+      try {
+        const code = buildPixStatic({ key: pixStaticKey, amount: 1, txid: "TESTE" });
+        if (code && code.length > 50) {
+          setSyncCheck({ status: "ok", message: `Chave PIX válida — BR Code gerado (${code.length} chars)` });
+          toast({ title: "✅ PIX Estático OK", description: "Geração local funcionando." });
+        } else {
+          throw new Error("Falha ao gerar BR Code");
+        }
+      } catch (e: any) {
+        setSyncCheck({ status: "fail", message: e?.message || "Erro" });
+      }
+      return;
+    }
     const fn = provider === "zuckpay" ? "create-zuckpay-payment" : "create-pix-payment";
     try {
       const { data, error } = await supabase.functions.invoke(fn, {
