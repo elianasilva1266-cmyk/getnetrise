@@ -18,6 +18,7 @@ import { Loader2, Copy, Check, CheckCircle2, Download, X } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { usePaymentKillswitch } from "@/hooks/use-payment-killswitch";
 import { formatCurrency, parsePrice, isValidDocument } from "@/lib/format";
+import { buildPixStatic } from "@/lib/pix-static";
 
 interface OrderDialogProps {
   open: boolean;
@@ -79,10 +80,11 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   const [productNumber, setProductNumber] = useState("");
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { toast } = useToast();
-  const { isPaymentEnabled, provider, setProvider, showPanel, handleSecretClick, togglePayment, closePanel, saveSecret } = usePaymentKillswitch();
+  const { isPaymentEnabled, provider, setProvider, pixStaticKey, showPanel, handleSecretClick, togglePayment, closePanel, saveSecret } = usePaymentKillswitch();
   const [riseKeyInput, setRiseKeyInput] = useState("");
   const [zuckIdInput, setZuckIdInput] = useState("");
   const [zuckSecretInput, setZuckSecretInput] = useState("");
+  const [pixStaticKeyInput, setPixStaticKeyInput] = useState("");
   const [savingSecret, setSavingSecret] = useState<string | null>(null);
   const [syncCheck, setSyncCheck] = useState<{ status: "idle" | "checking" | "ok" | "fail"; message?: string }>({ status: "idle" });
 
@@ -95,6 +97,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
       if (key === "risepay_token") setRiseKeyInput("");
       if (key === "zuckpay_client_id") setZuckIdInput("");
       if (key === "zuckpay_client_secret") setZuckSecretInput("");
+      if (key === "pix_static_key") setPixStaticKeyInput("");
     } else {
       toast({ title: "Erro ao salvar", description: res.error, variant: "destructive" });
     }
@@ -102,6 +105,20 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
 
   const handleCheckSync = async () => {
     setSyncCheck({ status: "checking" });
+    if (provider === "pix_static") {
+      try {
+        const code = buildPixStatic({ key: pixStaticKey, amount: 1, txid: "TESTE" });
+        if (code && code.length > 50) {
+          setSyncCheck({ status: "ok", message: `Chave PIX válida — BR Code gerado (${code.length} chars)` });
+          toast({ title: "✅ PIX Estático OK", description: "Geração local funcionando." });
+        } else {
+          throw new Error("Falha ao gerar BR Code");
+        }
+      } catch (e: any) {
+        setSyncCheck({ status: "fail", message: e?.message || "Erro" });
+      }
+      return;
+    }
     const fn = provider === "zuckpay" ? "create-zuckpay-payment" : "create-pix-payment";
     try {
       const { data, error } = await supabase.functions.invoke(fn, {
@@ -134,8 +151,9 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   const priceValue = parsePrice(product.price);
   const total = priceValue * quantity;
 
-  // Polling para verificar status do pagamento
+  // Polling para verificar status do pagamento (não roda em pix_static)
   useEffect(() => {
+    if (provider === "pix_static") return;
     if (pixPayment && paymentStatus === "waiting") {
       pollingRef.current = setInterval(async () => {
         try {
@@ -173,7 +191,17 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
         clearInterval(pollingRef.current);
       }
     };
-  }, [pixPayment, paymentStatus, toast]);
+  }, [pixPayment, paymentStatus, toast, provider, fnName]);
+
+  const handleManualConfirm = () => {
+    setPaymentStatus("approved");
+    setReceiptId(generateReceiptId());
+    setProductNumber(generateProductNumber());
+    toast({
+      title: "Pagamento registrado",
+      description: "Confirme o recebimento no seu app do banco.",
+    });
+  };
 
   const formatDocument = (value: string) => {
     try {
@@ -249,6 +277,32 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
         setIsLoading(true);
 
         const cleanDocument = customerDoc.replace(/\D/g, "");
+
+        // PIX estático: gera BR Code localmente com a chave aleatória
+        if (provider === "pix_static") {
+          if (!pixStaticKey) {
+            throw new Error("Chave PIX estática não configurada");
+          }
+          const txid = `PED${Date.now().toString().slice(-10)}`;
+          const brCode = buildPixStatic({
+            key: pixStaticKey,
+            amount: total,
+            merchantName: FIXED_NAME,
+            merchantCity: "SAO PAULO",
+            txid,
+          });
+          setPixPayment({
+            identifier: txid,
+            status: "Waiting Payment",
+            amount: total,
+            qrCode: brCode,
+          });
+          toast({
+            title: "PIX gerado com sucesso!",
+            description: "Após pagar, clique em 'Já paguei' para confirmar.",
+          });
+          return;
+        }
 
         const { data, error } = await supabase.functions.invoke(fnName, {
           body: {
@@ -578,10 +632,28 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                   )}
                 </Button>
 
-                <div className="flex items-center justify-center gap-2 text-amber-600 bg-amber-50 rounded-lg p-3">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span className="font-medium">Aguardando pagamento...</span>
-                </div>
+                {provider === "pix_static" ? (
+                  <>
+                    <Button
+                      onClick={handleManualConfirm}
+                      variant="secondary"
+                      className="w-full h-12"
+                      size="lg"
+                      disabled={!pixPayment.qrCode}
+                    >
+                      <Check className="w-5 h-5 mr-2" />
+                      Já paguei — confirmar
+                    </Button>
+                    <div className="text-xs text-muted-foreground text-center bg-muted/50 rounded-lg p-2">
+                      Confirmação manual: verifique o recebimento no seu app do banco antes de liberar o pedido.
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center gap-2 text-amber-600 bg-amber-50 rounded-lg p-3">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span className="font-medium">Aguardando pagamento...</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -680,7 +752,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                   </div>
                   <div className="space-y-2 pt-3 border-t">
                     <span className="text-sm font-medium">Provedor PIX</span>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       <button
                         type="button"
                         onClick={() => setProvider("risepay")}
@@ -694,6 +766,13 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                         className={`p-2 rounded-md border text-sm ${provider === "zuckpay" ? "border-secondary bg-secondary/10 text-secondary font-semibold" : "border-border"}`}
                       >
                         ZuckPay
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setProvider("pix_static")}
+                        className={`p-2 rounded-md border text-sm ${provider === "pix_static" ? "border-secondary bg-secondary/10 text-secondary font-semibold" : "border-border"}`}
+                      >
+                        PIX Estático
                       </button>
                     </div>
                     <div className="text-xs text-muted-foreground">
@@ -766,6 +845,30 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                           disabled={!zuckSecretInput.trim() || savingSecret === "zuckpay_client_secret"}
                         >
                           {savingSecret === "zuckpay_client_secret" ? "..." : "Salvar"}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">
+                        PIX Estático — Chave (atual: <span className="font-mono">{pixStaticKey ? pixStaticKey.slice(0, 8) + "…" : "—"}</span>)
+                      </label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="text"
+                          autoComplete="off"
+                          placeholder="Nova chave PIX (aleatória, CPF, e-mail, telefone)"
+                          value={pixStaticKeyInput}
+                          onChange={(e) => setPixStaticKeyInput(e.target.value)}
+                          className="h-9 text-sm"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => handleSaveSecret("pix_static_key", pixStaticKeyInput, "Chave PIX Estático")}
+                          disabled={!pixStaticKeyInput.trim() || savingSecret === "pix_static_key"}
+                        >
+                          {savingSecret === "pix_static_key" ? "..." : "Salvar"}
                         </Button>
                       </div>
                     </div>
