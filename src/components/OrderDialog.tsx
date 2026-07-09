@@ -18,6 +18,7 @@ import { Loader2, Copy, Check, CheckCircle2, Download, X } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { usePaymentKillswitch } from "@/hooks/use-payment-killswitch";
 import { formatCurrency, parsePrice, isValidDocument } from "@/lib/format";
+import { buildPixStatic } from "@/lib/pix-static";
 
 interface OrderDialogProps {
   open: boolean;
