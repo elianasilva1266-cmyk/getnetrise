@@ -618,10 +618,28 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                   )}
                 </Button>
 
-                <div className="flex items-center justify-center gap-2 text-amber-600 bg-amber-50 rounded-lg p-3">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span className="font-medium">Aguardando pagamento...</span>
-                </div>
+                {provider === "pix_static" ? (
+                  <>
+                    <Button
+                      onClick={handleManualConfirm}
+                      variant="secondary"
+                      className="w-full h-12"
+                      size="lg"
+                      disabled={!pixPayment.qrCode}
+                    >
+                      <Check className="w-5 h-5 mr-2" />
+                      Já paguei — confirmar
+                    </Button>
+                    <div className="text-xs text-muted-foreground text-center bg-muted/50 rounded-lg p-2">
+                      Confirmação manual: verifique o recebimento no seu app do banco antes de liberar o pedido.
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center gap-2 text-amber-600 bg-amber-50 rounded-lg p-3">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span className="font-medium">Aguardando pagamento...</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
