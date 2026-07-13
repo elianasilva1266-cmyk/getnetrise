@@ -145,23 +145,24 @@ serve(async (req) => {
     }
 
     // Extração defensiva — MasterFy pode retornar em vários formatos
-    const root = data.data || data;
+    const root = data.data ? { ...data, ...data.data, _payment: data } : data;
     const identifier =
-      root.id || root.transactionId || root.paymentId || root.reference || null;
+      data.id || root.id || root.transactionId || root.paymentId || root.reference || null;
     const qrCode =
+      data?.data?.copypaste ||
+      data?.data?.qrcode ||
+      data?.data?.qrCode ||
       root.pix?.qrcode ||
       root.pix?.qrCode ||
       root.pix?.emv ||
       root.qrcode ||
       root.qrCode ||
-      root.payment?.pix?.qrcode ||
-      root.payment?.qrcode ||
       null;
     const qrCodeImage =
+      data?.data?.qrcodeImage ||
+      data?.data?.qrCodeImage ||
       root.pix?.qrcodeImage ||
-      root.pix?.qrCodeImage ||
       root.qrcodeImage ||
-      root.qrCodeImage ||
       null;
 
     if (!identifier || !qrCode) {
