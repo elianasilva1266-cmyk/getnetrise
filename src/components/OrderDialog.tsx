@@ -146,7 +146,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
       toast({ title: "Erro", description: e?.message || "Erro desconhecido", variant: "destructive" });
     }
   };
-  const fnName = provider === "zuckpay" ? "create-zuckpay-payment" : "create-pix-payment";
+  const fnName = provider === "zuckpay" ? "create-zuckpay-payment" : provider === "masterfy" ? "create-masterfy-payment" : "create-pix-payment";
 
   const priceValue = parsePrice(product.price);
   const total = priceValue * quantity;
