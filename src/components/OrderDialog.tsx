@@ -119,7 +119,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
       }
       return;
     }
-    const fn = provider === "zuckpay" ? "create-zuckpay-payment" : "create-pix-payment";
+    const fn = provider === "zuckpay" ? "create-zuckpay-payment" : provider === "masterfy" ? "create-masterfy-payment" : "create-pix-payment";
     try {
       const { data, error } = await supabase.functions.invoke(fn, {
         body: {
