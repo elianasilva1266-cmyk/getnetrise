@@ -859,6 +859,28 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                     </div>
 
                     <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">MasterFy — API Key</label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="password"
+                          autoComplete="off"
+                          placeholder="Cole a chave de API MasterFy"
+                          value={masterfyKeyInput}
+                          onChange={(e) => setMasterfyKeyInput(e.target.value)}
+                          className="h-9 text-sm"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => handleSaveSecret("masterfy_api_key", masterfyKeyInput, "Chave MasterFy")}
+                          disabled={!masterfyKeyInput.trim() || savingSecret === "masterfy_api_key"}
+                        >
+                          {savingSecret === "masterfy_api_key" ? "..." : "Salvar"}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
                       <label className="text-xs text-muted-foreground">
                         PIX Estático — Chave (atual: <span className="font-mono">{pixStaticKey ? pixStaticKey.slice(0, 8) + "…" : "—"}</span>)
                       </label>
