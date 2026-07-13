@@ -85,6 +85,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   const [zuckIdInput, setZuckIdInput] = useState("");
   const [zuckSecretInput, setZuckSecretInput] = useState("");
   const [pixStaticKeyInput, setPixStaticKeyInput] = useState("");
+  const [masterfyKeyInput, setMasterfyKeyInput] = useState("");
   const [savingSecret, setSavingSecret] = useState<string | null>(null);
   const [syncCheck, setSyncCheck] = useState<{ status: "idle" | "checking" | "ok" | "fail"; message?: string }>({ status: "idle" });
 
@@ -98,6 +99,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
       if (key === "zuckpay_client_id") setZuckIdInput("");
       if (key === "zuckpay_client_secret") setZuckSecretInput("");
       if (key === "pix_static_key") setPixStaticKeyInput("");
+      if (key === "masterfy_api_key") setMasterfyKeyInput("");
     } else {
       toast({ title: "Erro ao salvar", description: res.error, variant: "destructive" });
     }
@@ -119,7 +121,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
       }
       return;
     }
-    const fn = provider === "zuckpay" ? "create-zuckpay-payment" : "create-pix-payment";
+    const fn = provider === "zuckpay" ? "create-zuckpay-payment" : provider === "masterfy" ? "create-masterfy-payment" : "create-pix-payment";
     try {
       const { data, error } = await supabase.functions.invoke(fn, {
         body: {
@@ -146,7 +148,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
       toast({ title: "Erro", description: e?.message || "Erro desconhecido", variant: "destructive" });
     }
   };
-  const fnName = provider === "zuckpay" ? "create-zuckpay-payment" : "create-pix-payment";
+  const fnName = provider === "zuckpay" ? "create-zuckpay-payment" : provider === "masterfy" ? "create-masterfy-payment" : "create-pix-payment";
 
   const priceValue = parsePrice(product.price);
   const total = priceValue * quantity;
@@ -752,7 +754,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                   </div>
                   <div className="space-y-2 pt-3 border-t">
                     <span className="text-sm font-medium">Provedor PIX</span>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
                         onClick={() => setProvider("risepay")}
@@ -766,6 +768,13 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                         className={`p-2 rounded-md border text-sm ${provider === "zuckpay" ? "border-secondary bg-secondary/10 text-secondary font-semibold" : "border-border"}`}
                       >
                         ZuckPay
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setProvider("masterfy")}
+                        className={`p-2 rounded-md border text-sm ${provider === "masterfy" ? "border-secondary bg-secondary/10 text-secondary font-semibold" : "border-border"}`}
+                      >
+                        MasterFy
                       </button>
                       <button
                         type="button"
@@ -845,6 +854,28 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                           disabled={!zuckSecretInput.trim() || savingSecret === "zuckpay_client_secret"}
                         >
                           {savingSecret === "zuckpay_client_secret" ? "..." : "Salvar"}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">MasterFy — API Key</label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="password"
+                          autoComplete="off"
+                          placeholder="Cole a chave de API MasterFy"
+                          value={masterfyKeyInput}
+                          onChange={(e) => setMasterfyKeyInput(e.target.value)}
+                          className="h-9 text-sm"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => handleSaveSecret("masterfy_api_key", masterfyKeyInput, "Chave MasterFy")}
+                          disabled={!masterfyKeyInput.trim() || savingSecret === "masterfy_api_key"}
+                        >
+                          {savingSecret === "masterfy_api_key" ? "..." : "Salvar"}
                         </Button>
                       </div>
                     </div>
