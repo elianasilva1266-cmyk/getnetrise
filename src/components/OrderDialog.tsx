@@ -754,7 +754,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                   </div>
                   <div className="space-y-2 pt-3 border-t">
                     <span className="text-sm font-medium">Provedor PIX</span>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
                         onClick={() => setProvider("risepay")}
@@ -768,6 +768,13 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                         className={`p-2 rounded-md border text-sm ${provider === "zuckpay" ? "border-secondary bg-secondary/10 text-secondary font-semibold" : "border-border"}`}
                       >
                         ZuckPay
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setProvider("masterfy")}
+                        className={`p-2 rounded-md border text-sm ${provider === "masterfy" ? "border-secondary bg-secondary/10 text-secondary font-semibold" : "border-border"}`}
+                      >
+                        MasterFy
                       </button>
                       <button
                         type="button"
