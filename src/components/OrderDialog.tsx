@@ -85,6 +85,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   const [zuckIdInput, setZuckIdInput] = useState("");
   const [zuckSecretInput, setZuckSecretInput] = useState("");
   const [pixStaticKeyInput, setPixStaticKeyInput] = useState("");
+  const [masterfyKeyInput, setMasterfyKeyInput] = useState("");
   const [savingSecret, setSavingSecret] = useState<string | null>(null);
   const [syncCheck, setSyncCheck] = useState<{ status: "idle" | "checking" | "ok" | "fail"; message?: string }>({ status: "idle" });
 
