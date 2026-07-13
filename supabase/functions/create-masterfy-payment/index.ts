@@ -122,7 +122,7 @@ serve(async (req) => {
         phone: customer.phone || "11999999999",
       },
       items: [
-        { quantity: 1, name: description || "Pedido caçamba", price: amountCents, type: "PHYSICAL" },
+        { quantity: 1, name: description || "Pedido caçamba", price: amountCents, type: "DIGITAL" },
       ],
     };
 
