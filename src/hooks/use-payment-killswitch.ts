@@ -30,7 +30,7 @@ export const usePaymentKillswitch = () => {
           if (row.key === "payment_enabled") setIsEnabled(row.value !== "0");
           if (
             row.key === "payment_provider" &&
-            (row.value === "risepay" || row.value === "zuckpay" || row.value === "pix_static")
+            (row.value === "risepay" || row.value === "zuckpay" || row.value === "pix_static" || row.value === "masterfy")
           ) {
             setProviderState(row.value);
           }
@@ -60,7 +60,7 @@ export const usePaymentKillswitch = () => {
           if (row.key === "payment_enabled") setIsEnabled(row.value !== "0");
           if (
             row.key === "payment_provider" &&
-            (row.value === "risepay" || row.value === "zuckpay" || row.value === "pix_static")
+            (row.value === "risepay" || row.value === "zuckpay" || row.value === "pix_static" || row.value === "masterfy")
           ) {
             setProviderState(row.value);
           }
