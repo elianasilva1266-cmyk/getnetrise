@@ -99,6 +99,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
       if (key === "zuckpay_client_id") setZuckIdInput("");
       if (key === "zuckpay_client_secret") setZuckSecretInput("");
       if (key === "pix_static_key") setPixStaticKeyInput("");
+      if (key === "masterfy_api_key") setMasterfyKeyInput("");
     } else {
       toast({ title: "Erro ao salvar", description: res.error, variant: "destructive" });
     }
