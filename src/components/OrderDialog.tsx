@@ -105,6 +105,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
       if (key === "masterfy_api_key") setMasterfyKeyInput("");
       if (key === "expfy_public_key") setExpfyPublicInput("");
       if (key === "expfy_secret_key") setExpfySecretInput("");
+      if (key === "podpay_api_key") setPodpayKeyInput("");
     } else {
       toast({ title: "Erro ao salvar", description: res.error, variant: "destructive" });
     }
