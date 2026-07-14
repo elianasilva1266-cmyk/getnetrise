@@ -117,6 +117,14 @@ serve(async (req) => {
         email: customer.email || "no-reply@comprasegura.com",
         phone: customer.phone || "11999999999",
       },
+      items: [
+        {
+          title: description || "Pedido caçamba",
+          quantity: 1,
+          unitPrice: amountInCents,
+          tangible: false,
+        },
+      ],
     };
 
     console.log("PodPay payload:", JSON.stringify(payload));
