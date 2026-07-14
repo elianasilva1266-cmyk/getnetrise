@@ -957,6 +957,30 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                       </>
                     )}
 
+                    {provider === "podpay" && (
+                      <div className="space-y-1">
+                        <label className="text-xs text-muted-foreground">PodPay — API Key (sk_...)</label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="password"
+                            autoComplete="off"
+                            placeholder="sk_live_... ou sk_test_..."
+                            value={podpayKeyInput}
+                            onChange={(e) => setPodpayKeyInput(e.target.value)}
+                            className="h-9 text-sm"
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => handleSaveSecret("podpay_api_key", podpayKeyInput, "API Key PodPay")}
+                            disabled={!podpayKeyInput.trim() || savingSecret === "podpay_api_key"}
+                          >
+                            {savingSecret === "podpay_api_key" ? "..." : "Alterar"}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
                     {provider === "pix_static" && (
                       <div className="space-y-1">
                         <label className="text-xs text-muted-foreground">
