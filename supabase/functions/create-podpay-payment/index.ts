@@ -163,8 +163,11 @@ serve(async (req) => {
     const root = data.data ? { ...data, ...data.data } : data;
     const pix = root.pix || root.pix_data || {};
     const qrCode =
+      root.pixQrCode ||
+      root.pix_qr_code ||
       pix.qrcode ||
       pix.qr_code ||
+      pix.qrCode ||
       pix.code ||
       pix.copy_paste ||
       pix.copypaste ||
@@ -178,8 +181,10 @@ serve(async (req) => {
       root.brcode ||
       null;
     const qrCodeImage =
+      root.pixQrCodeImage ||
       pix.qrcode_image ||
       pix.qr_code_image ||
+      pix.qrCodeImage ||
       pix.image ||
       root.qr_code_image ||
       root.qrcode_image ||
