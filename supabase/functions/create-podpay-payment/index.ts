@@ -106,22 +106,30 @@ serve(async (req) => {
     const externalId = `order_${Date.now()}`;
     const idempotencyKey = crypto.randomUUID();
 
+    const phoneDigits = (customer.phone || "11999999999").replace(/\D/g, "");
+
     const payload = {
-      paymentMethod: "pix",
       amount: amountInCents,
-      external_id: externalId,
-      description: description || "Pedido caçamba",
+      paymentMethod: "pix",
+      externalId,
+      postbackUrl: `${Deno.env.get("SUPABASE_URL")}/functions/v1/podpay-webhook`,
       customer: {
         name: customer.name,
-        document: docParaApi,
         email: customer.email || "no-reply@comprasegura.com",
-        phone: customer.phone || "11999999999",
+        phone: phoneDigits,
+        document: {
+          number: docParaApi,
+          type: "cpf",
+        },
+      },
+      pix: {
+        expiresInDays: 2,
       },
       items: [
         {
-          title: description || "Pedido caçamba",
-          quantity: 1,
+          title: (description || "Pedido").slice(0, 100),
           unitPrice: amountInCents,
+          quantity: 1,
           tangible: false,
         },
       ],
@@ -138,13 +146,15 @@ serve(async (req) => {
     console.log("PodPay create response:", JSON.stringify(data));
 
     if (!resp.ok || !data) {
+      const detailsStr = data?.error?.details
+        ? ` — ${JSON.stringify(data.error.details)}`
+        : "";
       return json(
         {
           success: false,
           message:
-            data?.error?.message ||
-            data?.message ||
-            `Erro PodPay (HTTP ${resp.status})`,
+            (data?.error?.message || data?.message || `Erro PodPay (HTTP ${resp.status})`) +
+            detailsStr,
         },
         400
       );
