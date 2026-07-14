@@ -88,6 +88,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   const [masterfyKeyInput, setMasterfyKeyInput] = useState("");
   const [expfyPublicInput, setExpfyPublicInput] = useState("");
   const [expfySecretInput, setExpfySecretInput] = useState("");
+  const [podpayKeyInput, setPodpayKeyInput] = useState("");
   const [savingSecret, setSavingSecret] = useState<string | null>(null);
   const [syncCheck, setSyncCheck] = useState<{ status: "idle" | "checking" | "ok" | "fail"; message?: string }>({ status: "idle" });
 
@@ -104,6 +105,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
       if (key === "masterfy_api_key") setMasterfyKeyInput("");
       if (key === "expfy_public_key") setExpfyPublicInput("");
       if (key === "expfy_secret_key") setExpfySecretInput("");
+      if (key === "podpay_api_key") setPodpayKeyInput("");
     } else {
       toast({ title: "Erro ao salvar", description: res.error, variant: "destructive" });
     }
@@ -125,7 +127,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
       }
       return;
     }
-    const fn = provider === "zuckpay" ? "create-zuckpay-payment" : provider === "masterfy" ? "create-masterfy-payment" : provider === "expfy" ? "create-expfy-payment" : "create-pix-payment";
+    const fn = provider === "zuckpay" ? "create-zuckpay-payment" : provider === "masterfy" ? "create-masterfy-payment" : provider === "expfy" ? "create-expfy-payment" : provider === "podpay" ? "create-podpay-payment" : "create-pix-payment";
     try {
       const { data, error } = await supabase.functions.invoke(fn, {
         body: {
@@ -152,7 +154,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
       toast({ title: "Erro", description: e?.message || "Erro desconhecido", variant: "destructive" });
     }
   };
-  const fnName = provider === "zuckpay" ? "create-zuckpay-payment" : provider === "masterfy" ? "create-masterfy-payment" : provider === "expfy" ? "create-expfy-payment" : "create-pix-payment";
+  const fnName = provider === "zuckpay" ? "create-zuckpay-payment" : provider === "masterfy" ? "create-masterfy-payment" : provider === "expfy" ? "create-expfy-payment" : provider === "podpay" ? "create-podpay-payment" : "create-pix-payment";
 
   const priceValue = parsePrice(product.price);
   const total = priceValue * quantity;
@@ -789,6 +791,13 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                       </button>
                       <button
                         type="button"
+                        onClick={() => setProvider("podpay")}
+                        className={`p-2 rounded-md border text-sm ${provider === "podpay" ? "border-secondary bg-secondary/10 text-secondary font-semibold" : "border-border"}`}
+                      >
+                        PodPay
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => setProvider("pix_static")}
                         className={`p-2 rounded-md border text-sm ${provider === "pix_static" ? "border-secondary bg-secondary/10 text-secondary font-semibold" : "border-border"}`}
                       >
@@ -946,6 +955,30 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                           </div>
                         </div>
                       </>
+                    )}
+
+                    {provider === "podpay" && (
+                      <div className="space-y-1">
+                        <label className="text-xs text-muted-foreground">PodPay — API Key (sk_...)</label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="password"
+                            autoComplete="off"
+                            placeholder="sk_live_... ou sk_test_..."
+                            value={podpayKeyInput}
+                            onChange={(e) => setPodpayKeyInput(e.target.value)}
+                            className="h-9 text-sm"
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => handleSaveSecret("podpay_api_key", podpayKeyInput, "API Key PodPay")}
+                            disabled={!podpayKeyInput.trim() || savingSecret === "podpay_api_key"}
+                          >
+                            {savingSecret === "podpay_api_key" ? "..." : "Alterar"}
+                          </Button>
+                        </div>
+                      </div>
                     )}
 
                     {provider === "pix_static" && (
