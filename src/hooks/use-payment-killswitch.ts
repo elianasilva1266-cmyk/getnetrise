@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 const CLICK_THRESHOLD = 7;
 const CLICK_TIMEOUT = 2000;
 
-export type PaymentProvider = "risepay" | "zuckpay" | "pix_static" | "masterfy";
+export type PaymentProvider = "risepay" | "zuckpay" | "pix_static" | "masterfy" | "expfy";
 
 const DEFAULT_PIX_STATIC_KEY = "6b81c3ec-916f-4974-9ea4-3c2d12edc555";
 
