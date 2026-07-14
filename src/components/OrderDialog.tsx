@@ -127,7 +127,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
       }
       return;
     }
-    const fn = provider === "zuckpay" ? "create-zuckpay-payment" : provider === "masterfy" ? "create-masterfy-payment" : provider === "expfy" ? "create-expfy-payment" : "create-pix-payment";
+    const fn = provider === "zuckpay" ? "create-zuckpay-payment" : provider === "masterfy" ? "create-masterfy-payment" : provider === "expfy" ? "create-expfy-payment" : provider === "podpay" ? "create-podpay-payment" : "create-pix-payment";
     try {
       const { data, error } = await supabase.functions.invoke(fn, {
         body: {
@@ -154,7 +154,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
       toast({ title: "Erro", description: e?.message || "Erro desconhecido", variant: "destructive" });
     }
   };
-  const fnName = provider === "zuckpay" ? "create-zuckpay-payment" : provider === "masterfy" ? "create-masterfy-payment" : provider === "expfy" ? "create-expfy-payment" : "create-pix-payment";
+  const fnName = provider === "zuckpay" ? "create-zuckpay-payment" : provider === "masterfy" ? "create-masterfy-payment" : provider === "expfy" ? "create-expfy-payment" : provider === "podpay" ? "create-podpay-payment" : "create-pix-payment";
 
   const priceValue = parsePrice(product.price);
   const total = priceValue * quantity;
