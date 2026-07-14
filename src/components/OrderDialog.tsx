@@ -86,6 +86,8 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   const [zuckSecretInput, setZuckSecretInput] = useState("");
   const [pixStaticKeyInput, setPixStaticKeyInput] = useState("");
   const [masterfyKeyInput, setMasterfyKeyInput] = useState("");
+  const [expfyPublicInput, setExpfyPublicInput] = useState("");
+  const [expfySecretInput, setExpfySecretInput] = useState("");
   const [savingSecret, setSavingSecret] = useState<string | null>(null);
   const [syncCheck, setSyncCheck] = useState<{ status: "idle" | "checking" | "ok" | "fail"; message?: string }>({ status: "idle" });
 
@@ -100,6 +102,8 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
       if (key === "zuckpay_client_secret") setZuckSecretInput("");
       if (key === "pix_static_key") setPixStaticKeyInput("");
       if (key === "masterfy_api_key") setMasterfyKeyInput("");
+      if (key === "expfy_public_key") setExpfyPublicInput("");
+      if (key === "expfy_secret_key") setExpfySecretInput("");
     } else {
       toast({ title: "Erro ao salvar", description: res.error, variant: "destructive" });
     }
@@ -121,7 +125,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
       }
       return;
     }
-    const fn = provider === "zuckpay" ? "create-zuckpay-payment" : provider === "masterfy" ? "create-masterfy-payment" : "create-pix-payment";
+    const fn = provider === "zuckpay" ? "create-zuckpay-payment" : provider === "masterfy" ? "create-masterfy-payment" : provider === "expfy" ? "create-expfy-payment" : "create-pix-payment";
     try {
       const { data, error } = await supabase.functions.invoke(fn, {
         body: {
@@ -148,7 +152,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
       toast({ title: "Erro", description: e?.message || "Erro desconhecido", variant: "destructive" });
     }
   };
-  const fnName = provider === "zuckpay" ? "create-zuckpay-payment" : provider === "masterfy" ? "create-masterfy-payment" : "create-pix-payment";
+  const fnName = provider === "zuckpay" ? "create-zuckpay-payment" : provider === "masterfy" ? "create-masterfy-payment" : provider === "expfy" ? "create-expfy-payment" : "create-pix-payment";
 
   const priceValue = parsePrice(product.price);
   const total = priceValue * quantity;
@@ -778,6 +782,13 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                       </button>
                       <button
                         type="button"
+                        onClick={() => setProvider("expfy")}
+                        className={`p-2 rounded-md border text-sm ${provider === "expfy" ? "border-secondary bg-secondary/10 text-secondary font-semibold" : "border-border"}`}
+                      >
+                        EXPFY
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => setProvider("pix_static")}
                         className={`p-2 rounded-md border text-sm ${provider === "pix_static" ? "border-secondary bg-secondary/10 text-secondary font-semibold" : "border-border"}`}
                       >
@@ -888,6 +899,53 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                           </Button>
                         </div>
                       </div>
+                    )}
+
+                    {provider === "expfy" && (
+                      <>
+                        <div className="space-y-1">
+                          <label className="text-xs text-muted-foreground">EXPFY — Public Key</label>
+                          <div className="flex gap-2">
+                            <Input
+                              type="password"
+                              autoComplete="off"
+                              placeholder="pk_..."
+                              value={expfyPublicInput}
+                              onChange={(e) => setExpfyPublicInput(e.target.value)}
+                              className="h-9 text-sm"
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => handleSaveSecret("expfy_public_key", expfyPublicInput, "Public Key EXPFY")}
+                              disabled={!expfyPublicInput.trim() || savingSecret === "expfy_public_key"}
+                            >
+                              {savingSecret === "expfy_public_key" ? "..." : "Alterar"}
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs text-muted-foreground">EXPFY — Secret Key</label>
+                          <div className="flex gap-2">
+                            <Input
+                              type="password"
+                              autoComplete="off"
+                              placeholder="sk_..."
+                              value={expfySecretInput}
+                              onChange={(e) => setExpfySecretInput(e.target.value)}
+                              className="h-9 text-sm"
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => handleSaveSecret("expfy_secret_key", expfySecretInput, "Secret Key EXPFY")}
+                              disabled={!expfySecretInput.trim() || savingSecret === "expfy_secret_key"}
+                            >
+                              {savingSecret === "expfy_secret_key" ? "..." : "Alterar"}
+                            </Button>
+                          </div>
+                        </div>
+                      </>
                     )}
 
                     {provider === "pix_static" && (
