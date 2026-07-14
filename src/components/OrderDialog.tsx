@@ -88,6 +88,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   const [masterfyKeyInput, setMasterfyKeyInput] = useState("");
   const [expfyPublicInput, setExpfyPublicInput] = useState("");
   const [expfySecretInput, setExpfySecretInput] = useState("");
+  const [podpayKeyInput, setPodpayKeyInput] = useState("");
   const [savingSecret, setSavingSecret] = useState<string | null>(null);
   const [syncCheck, setSyncCheck] = useState<{ status: "idle" | "checking" | "ok" | "fail"; message?: string }>({ status: "idle" });
 
