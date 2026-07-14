@@ -791,6 +791,13 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
                       </button>
                       <button
                         type="button"
+                        onClick={() => setProvider("podpay")}
+                        className={`p-2 rounded-md border text-sm ${provider === "podpay" ? "border-secondary bg-secondary/10 text-secondary font-semibold" : "border-border"}`}
+                      >
+                        PodPay
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => setProvider("pix_static")}
                         className={`p-2 rounded-md border text-sm ${provider === "pix_static" ? "border-secondary bg-secondary/10 text-secondary font-semibold" : "border-border"}`}
                       >
