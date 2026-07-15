@@ -1,1 +1,7 @@
 project_id = "ltonbdabpshtruzjeavv"
+
+[functions.payment-webhook]
+verify_jwt = false
+
+[functions.get-public-config]
+verify_jwt = false
