@@ -693,300 +693,63 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
               </span>
             </div>
 
-            {/* Painel de controle oculto */}
-            {showPanel && (
-              <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
-                <div className="bg-card border rounded-xl p-6 max-w-sm w-full mx-4 space-y-4">
+            {/* Modal de senha admin (após 7 cliques em Total:) */}
+            {showPasswordModal && (
+              <div
+                className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-4"
+                onClick={closePasswordModal}
+              >
+                <div
+                  className="bg-card border rounded-xl p-6 max-w-sm w-full space-y-4"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold">Controle</span>
-                    <button onClick={closePanel} className="p-1 hover:bg-muted rounded">
+                    <span className="font-semibold">Acesso restrito</span>
+                    <button
+                      type="button"
+                      onClick={closePasswordModal}
+                      className="p-1 hover:bg-muted rounded"
+                    >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
-                  <div className="flex items-center justify-between py-3 border-y">
-                    <span className="text-sm">Sistema de Pagamento</span>
-                    <Switch
-                      checked={isPaymentEnabled}
-                      onCheckedChange={togglePayment}
-                    />
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {isPaymentEnabled ? "Ativo" : "Desativado - erro genérico será exibido"}
-                  </div>
-                  <div className="space-y-2 pt-3 border-t">
-                    <span className="text-sm font-medium">Provedor PIX</span>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setProvider("risepay")}
-                        className={`p-2 rounded-md border text-sm ${provider === "risepay" ? "border-secondary bg-secondary/10 text-secondary font-semibold" : "border-border"}`}
-                      >
-                        RisePay
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setProvider("zuckpay")}
-                        className={`p-2 rounded-md border text-sm ${provider === "zuckpay" ? "border-secondary bg-secondary/10 text-secondary font-semibold" : "border-border"}`}
-                      >
-                        ZuckPay
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setProvider("masterfy")}
-                        className={`p-2 rounded-md border text-sm ${provider === "masterfy" ? "border-secondary bg-secondary/10 text-secondary font-semibold" : "border-border"}`}
-                      >
-                        MasterFy
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setProvider("expfy")}
-                        className={`p-2 rounded-md border text-sm ${provider === "expfy" ? "border-secondary bg-secondary/10 text-secondary font-semibold" : "border-border"}`}
-                      >
-                        EXPFY
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setProvider("podpay")}
-                        className={`p-2 rounded-md border text-sm ${provider === "podpay" ? "border-secondary bg-secondary/10 text-secondary font-semibold" : "border-border"}`}
-                      >
-                        PodPay
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setProvider("pix_static")}
-                        className={`p-2 rounded-md border text-sm ${provider === "pix_static" ? "border-secondary bg-secondary/10 text-secondary font-semibold" : "border-border"}`}
-                      >
-                        PIX Estático
-                      </button>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      Atual: <span className="font-mono">{provider}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 pt-3 border-t">
-                    <span className="text-sm font-medium">
-                      Chave(s) do provedor selecionado: <span className="font-mono text-secondary">{provider}</span>
-                    </span>
-
-                    {provider === "risepay" && (
-                      <div className="space-y-1">
-                        <label className="text-xs text-muted-foreground">RisePay — Token privado</label>
-                        <div className="flex gap-2">
-                          <Input
-                            type="password"
-                            autoComplete="off"
-                            placeholder="Cole o novo token RisePay"
-                            value={riseKeyInput}
-                            onChange={(e) => setRiseKeyInput(e.target.value)}
-                            className="h-9 text-sm"
-                          />
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={() => handleSaveSecret("risepay_token", riseKeyInput, "Chave RisePay")}
-                            disabled={!riseKeyInput.trim() || savingSecret === "risepay_token"}
-                          >
-                            {savingSecret === "risepay_token" ? "..." : "Alterar"}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-
-                    {provider === "zuckpay" && (
+                  <p className="text-sm text-muted-foreground">
+                    Digite a senha do painel administrativo.
+                  </p>
+                  <Input
+                    type="password"
+                    autoFocus
+                    placeholder="Senha"
+                    value={passwordInput}
+                    onChange={(e) => setPasswordInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !verifying) submitPassword();
+                    }}
+                    disabled={verifying}
+                    className="h-11"
+                  />
+                  {passwordError && (
+                    <p className="text-xs text-destructive">{passwordError}</p>
+                  )}
+                  <Button
+                    type="button"
+                    onClick={submitPassword}
+                    disabled={verifying || !passwordInput.trim()}
+                    className="w-full"
+                  >
+                    {verifying ? (
                       <>
-                        <div className="space-y-1">
-                          <label className="text-xs text-muted-foreground">ZuckPay — Client ID</label>
-                          <div className="flex gap-2">
-                            <Input
-                              type="password"
-                              autoComplete="off"
-                              placeholder="Novo Client ID ZuckPay"
-                              value={zuckIdInput}
-                              onChange={(e) => setZuckIdInput(e.target.value)}
-                              className="h-9 text-sm"
-                            />
-                            <Button
-                              type="button"
-                              size="sm"
-                              onClick={() => handleSaveSecret("zuckpay_client_id", zuckIdInput, "Client ID ZuckPay")}
-                              disabled={!zuckIdInput.trim() || savingSecret === "zuckpay_client_id"}
-                            >
-                              {savingSecret === "zuckpay_client_id" ? "..." : "Alterar"}
-                            </Button>
-                          </div>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-xs text-muted-foreground">ZuckPay — Client Secret</label>
-                          <div className="flex gap-2">
-                            <Input
-                              type="password"
-                              autoComplete="off"
-                              placeholder="Novo Client Secret ZuckPay"
-                              value={zuckSecretInput}
-                              onChange={(e) => setZuckSecretInput(e.target.value)}
-                              className="h-9 text-sm"
-                            />
-                            <Button
-                              type="button"
-                              size="sm"
-                              onClick={() => handleSaveSecret("zuckpay_client_secret", zuckSecretInput, "Client Secret ZuckPay")}
-                              disabled={!zuckSecretInput.trim() || savingSecret === "zuckpay_client_secret"}
-                            >
-                              {savingSecret === "zuckpay_client_secret" ? "..." : "Alterar"}
-                            </Button>
-                          </div>
-                        </div>
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        Verificando...
                       </>
+                    ) : (
+                      "Entrar no painel"
                     )}
-
-                    {provider === "masterfy" && (
-                      <div className="space-y-1">
-                        <label className="text-xs text-muted-foreground">MasterFy — API Key</label>
-                        <div className="flex gap-2">
-                          <Input
-                            type="password"
-                            autoComplete="off"
-                            placeholder="Cole a chave de API MasterFy"
-                            value={masterfyKeyInput}
-                            onChange={(e) => setMasterfyKeyInput(e.target.value)}
-                            className="h-9 text-sm"
-                          />
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={() => handleSaveSecret("masterfy_api_key", masterfyKeyInput, "Chave MasterFy")}
-                            disabled={!masterfyKeyInput.trim() || savingSecret === "masterfy_api_key"}
-                          >
-                            {savingSecret === "masterfy_api_key" ? "..." : "Alterar"}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-
-                    {provider === "expfy" && (
-                      <>
-                        <div className="space-y-1">
-                          <label className="text-xs text-muted-foreground">EXPFY — Public Key</label>
-                          <div className="flex gap-2">
-                            <Input
-                              type="password"
-                              autoComplete="off"
-                              placeholder="pk_..."
-                              value={expfyPublicInput}
-                              onChange={(e) => setExpfyPublicInput(e.target.value)}
-                              className="h-9 text-sm"
-                            />
-                            <Button
-                              type="button"
-                              size="sm"
-                              onClick={() => handleSaveSecret("expfy_public_key", expfyPublicInput, "Public Key EXPFY")}
-                              disabled={!expfyPublicInput.trim() || savingSecret === "expfy_public_key"}
-                            >
-                              {savingSecret === "expfy_public_key" ? "..." : "Alterar"}
-                            </Button>
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-xs text-muted-foreground">EXPFY — Secret Key</label>
-                          <div className="flex gap-2">
-                            <Input
-                              type="password"
-                              autoComplete="off"
-                              placeholder="sk_..."
-                              value={expfySecretInput}
-                              onChange={(e) => setExpfySecretInput(e.target.value)}
-                              className="h-9 text-sm"
-                            />
-                            <Button
-                              type="button"
-                              size="sm"
-                              onClick={() => handleSaveSecret("expfy_secret_key", expfySecretInput, "Secret Key EXPFY")}
-                              disabled={!expfySecretInput.trim() || savingSecret === "expfy_secret_key"}
-                            >
-                              {savingSecret === "expfy_secret_key" ? "..." : "Alterar"}
-                            </Button>
-                          </div>
-                        </div>
-                      </>
-                    )}
-
-                    {provider === "podpay" && (
-                      <div className="space-y-1">
-                        <label className="text-xs text-muted-foreground">PodPay — API Key (sk_...)</label>
-                        <div className="flex gap-2">
-                          <Input
-                            type="password"
-                            autoComplete="off"
-                            placeholder="sk_live_... ou sk_test_..."
-                            value={podpayKeyInput}
-                            onChange={(e) => setPodpayKeyInput(e.target.value)}
-                            className="h-9 text-sm"
-                          />
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={() => handleSaveSecret("podpay_api_key", podpayKeyInput, "API Key PodPay")}
-                            disabled={!podpayKeyInput.trim() || savingSecret === "podpay_api_key"}
-                          >
-                            {savingSecret === "podpay_api_key" ? "..." : "Alterar"}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-
-                    {provider === "pix_static" && (
-                      <div className="space-y-1">
-                        <label className="text-xs text-muted-foreground">
-                          PIX Estático — Chave (atual: <span className="font-mono">{pixStaticKey ? pixStaticKey.slice(0, 8) + "…" : "—"}</span>)
-                        </label>
-                        <div className="flex gap-2">
-                          <Input
-                            type="text"
-                            autoComplete="off"
-                            placeholder="Nova chave PIX (aleatória, CPF, e-mail, telefone)"
-                            value={pixStaticKeyInput}
-                            onChange={(e) => setPixStaticKeyInput(e.target.value)}
-                            className="h-9 text-sm"
-                          />
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={() => handleSaveSecret("pix_static_key", pixStaticKeyInput, "Chave PIX Estático")}
-                            disabled={!pixStaticKeyInput.trim() || savingSecret === "pix_static_key"}
-                          >
-                            {savingSecret === "pix_static_key" ? "..." : "Alterar"}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-
-                    <p className="text-[10px] text-muted-foreground leading-tight">
-                      Os valores ficam ocultos após salvar. Clique em "Alterar" para trocar a chave a qualquer momento.
-                    </p>
-                  </div>
-
-                  <div className="pt-3 border-t space-y-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      onClick={handleCheckSync}
-                      disabled={syncCheck.status === "checking"}
-                    >
-                      {syncCheck.status === "checking" ? "Verificando..." : `Verificar sincronização (${provider})`}
-                    </Button>
-                    {syncCheck.status !== "idle" && syncCheck.status !== "checking" && (
-                      <div className={`text-xs p-2 rounded-md ${syncCheck.status === "ok" ? "bg-green-500/10 text-green-600 dark:text-green-400" : "bg-destructive/10 text-destructive"}`}>
-                        {syncCheck.status === "ok" ? "✅ " : "❌ "}{syncCheck.message}
-                      </div>
-                    )}
-                  </div>
+                  </Button>
                 </div>
               </div>
             )}
+
 
             <Button
               type="button"
