@@ -80,80 +80,20 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
   const [productNumber, setProductNumber] = useState("");
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { toast } = useToast();
-  const { isPaymentEnabled, provider, setProvider, pixStaticKey, showPanel, handleSecretClick, togglePayment, closePanel, saveSecret } = usePaymentKillswitch();
-  const [riseKeyInput, setRiseKeyInput] = useState("");
-  const [zuckIdInput, setZuckIdInput] = useState("");
-  const [zuckSecretInput, setZuckSecretInput] = useState("");
-  const [pixStaticKeyInput, setPixStaticKeyInput] = useState("");
-  const [masterfyKeyInput, setMasterfyKeyInput] = useState("");
-  const [expfyPublicInput, setExpfyPublicInput] = useState("");
-  const [expfySecretInput, setExpfySecretInput] = useState("");
-  const [podpayKeyInput, setPodpayKeyInput] = useState("");
-  const [savingSecret, setSavingSecret] = useState<string | null>(null);
-  const [syncCheck, setSyncCheck] = useState<{ status: "idle" | "checking" | "ok" | "fail"; message?: string }>({ status: "idle" });
+  const {
+    isPaymentEnabled,
+    provider,
+    pixStaticKey,
+    handleSecretClick,
+    showPasswordModal,
+    passwordInput,
+    setPasswordInput,
+    submitPassword,
+    closePasswordModal,
+    verifying,
+    passwordError,
+  } = usePaymentKillswitch();
 
-  const handleSaveSecret = async (key: string, value: string, label: string) => {
-    setSavingSecret(key);
-    const res = await saveSecret(key, value);
-    setSavingSecret(null);
-    if (res.ok) {
-      toast({ title: `${label} atualizada`, description: "Aplicada globalmente em todas as cobranças." });
-      if (key === "risepay_token") setRiseKeyInput("");
-      if (key === "zuckpay_client_id") setZuckIdInput("");
-      if (key === "zuckpay_client_secret") setZuckSecretInput("");
-      if (key === "pix_static_key") setPixStaticKeyInput("");
-      if (key === "masterfy_api_key") setMasterfyKeyInput("");
-      if (key === "expfy_public_key") setExpfyPublicInput("");
-      if (key === "expfy_secret_key") setExpfySecretInput("");
-      if (key === "podpay_api_key") setPodpayKeyInput("");
-    } else {
-      toast({ title: "Erro ao salvar", description: res.error, variant: "destructive" });
-    }
-  };
-
-  const handleCheckSync = async () => {
-    setSyncCheck({ status: "checking" });
-    if (provider === "pix_static") {
-      try {
-        const code = buildPixStatic({ key: pixStaticKey, amount: 1, txid: "TESTE" });
-        if (code && code.length > 50) {
-          setSyncCheck({ status: "ok", message: `Chave PIX válida — BR Code gerado (${code.length} chars)` });
-          toast({ title: "✅ PIX Estático OK", description: "Geração local funcionando." });
-        } else {
-          throw new Error("Falha ao gerar BR Code");
-        }
-      } catch (e: any) {
-        setSyncCheck({ status: "fail", message: e?.message || "Erro" });
-      }
-      return;
-    }
-    const fn = provider === "zuckpay" ? "create-zuckpay-payment" : provider === "masterfy" ? "create-masterfy-payment" : provider === "expfy" ? "create-expfy-payment" : provider === "podpay" ? "create-podpay-payment" : "create-pix-payment";
-    try {
-      const { data, error } = await supabase.functions.invoke(fn, {
-        body: {
-          amount: 4.5,
-          customer: { name: "TESTE SINCRONIZACAO", cpf: "05091065520", email: "teste-sync@teste.com", phone: "11999999999" },
-          description: "TESTE DE SINCRONIZACAO - NAO PAGAR",
-        },
-      });
-      if (error) {
-        setSyncCheck({ status: "fail", message: error.message });
-        toast({ title: "Falha na sincronização", description: error.message, variant: "destructive" });
-        return;
-      }
-      if (data?.success && data?.data?.qrCode) {
-        setSyncCheck({ status: "ok", message: `API ${provider} respondendo — chaves válidas` });
-        toast({ title: "✅ Sincronizado", description: `Chaves ${provider} estão ativas e funcionando.` });
-      } else {
-        const msg = data?.message || "Resposta inválida da API";
-        setSyncCheck({ status: "fail", message: msg });
-        toast({ title: "❌ Não sincronizado", description: msg, variant: "destructive" });
-      }
-    } catch (e: any) {
-      setSyncCheck({ status: "fail", message: e?.message || "Erro" });
-      toast({ title: "Erro", description: e?.message || "Erro desconhecido", variant: "destructive" });
-    }
-  };
   const fnName = provider === "zuckpay" ? "create-zuckpay-payment" : provider === "masterfy" ? "create-masterfy-payment" : provider === "expfy" ? "create-expfy-payment" : provider === "podpay" ? "create-podpay-payment" : "create-pix-payment";
 
   const priceValue = parsePrice(product.price);
@@ -183,11 +123,25 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
             if (pollingRef.current) {
               clearInterval(pollingRef.current);
             }
+            // Registra pedido pago no painel admin
+            try {
+              await supabase.functions.invoke("record-order", {
+                body: {
+                  provider,
+                  external_id: pixPayment.identifier,
+                  amount: pixPayment.amount,
+                  document: customerDoc.replace(/\D/g, ""),
+                },
+              });
+            } catch (e) {
+              console.warn("Falha ao registrar pedido:", e);
+            }
             toast({
               title: "Pagamento confirmado!",
               description: "Seu pagamento foi aprovado com sucesso.",
             });
           }
+
         } catch {
           // Silenciosamente ignora erros de polling - API pode retornar erro temporário
         }
