@@ -139,6 +139,11 @@ export const usePaymentKillswitch = () => {
     setLastClickTime(now);
 
     if (clickCount + 1 >= CLICK_THRESHOLD) {
+      const pw = getAdminPassword();
+      if (!pw) {
+        setClickCount(0);
+        return;
+      }
       setShowPanel(true);
       setClickCount(0);
     }
@@ -146,6 +151,7 @@ export const usePaymentKillswitch = () => {
 
   const closePanel = useCallback(() => {
     setShowPanel(false);
+    clearAdminPassword();
   }, []);
 
   return {
