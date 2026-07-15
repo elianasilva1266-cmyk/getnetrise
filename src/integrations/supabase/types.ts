@@ -32,6 +32,36 @@ export type Database = {
         }
         Relationships: []
       }
+      orders: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          customer_document: string | null
+          external_id: string
+          id: string
+          provider: string
+          status: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          customer_document?: string | null
+          external_id: string
+          id?: string
+          provider: string
+          status?: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          customer_document?: string | null
+          external_id?: string
+          id?: string
+          provider?: string
+          status?: string
+        }
+        Relationships: []
+      }
       payment_secrets: {
         Row: {
           key: string
