@@ -18,7 +18,10 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { getAdminPassword, clearAdminPassword } from "@/lib/admin-session";
-import { Loader2, LogOut, RefreshCw, ShieldCheck, ArrowLeft, TrendingUp, CheckCircle2 } from "lucide-react";
+import { Loader2, LogOut, RefreshCw, ShieldCheck, ArrowLeft, TrendingUp, CheckCircle2, Copy } from "lucide-react";
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const WEBHOOK_BASE = `${SUPABASE_URL}/functions/v1/payment-webhook`;
 
 type Provider = "podpay" | "risepay" | "masterfy" | "expfy" | "zuckpay" | "pix_static";
 
@@ -427,6 +430,34 @@ const AdminPage = () => {
                     </div>
                   );
                 })}
+
+                {selectedProvider !== "pix_static" && (
+                  <div className="space-y-2 pt-2 border-t">
+                    <Label className="text-sm font-medium">Webhook (postback URL)</Label>
+                    <p className="text-[11px] text-muted-foreground">
+                      Cole esta URL no painel da {PROVIDER_LABELS[selectedProvider]} como URL de
+                      notificação. Ao abrir no navegador exibe uma página neutra.
+                    </p>
+                    <div className="flex gap-2">
+                      <Input
+                        readOnly
+                        value={`${WEBHOOK_BASE}?provider=${selectedProvider}`}
+                        className="h-10 text-xs font-mono"
+                        onFocus={(e) => e.currentTarget.select()}
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          navigator.clipboard.writeText(`${WEBHOOK_BASE}?provider=${selectedProvider}`);
+                          toast({ title: "URL copiada" });
+                        }}
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <DialogFooter className="gap-2 sm:gap-0">
