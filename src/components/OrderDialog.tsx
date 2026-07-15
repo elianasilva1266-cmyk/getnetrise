@@ -321,6 +321,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
               phone: FIXED_PHONE,
               cpf: cleanDocument,
             },
+            description: `Produto ${productNumber}`,
           },
         });
 
