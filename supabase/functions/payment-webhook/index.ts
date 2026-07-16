@@ -150,6 +150,37 @@ serve(async (req) => {
     return okHtml();
   }
 
+  // Validação de secret: se estiver configurado no banco, exige match.
+  try {
+    const supaUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const secretKeyName = `webhook_secret_${provider}`;
+    const sr = await fetch(
+      `${supaUrl}/rest/v1/payment_secrets?key=eq.${secretKeyName}&select=value`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+    );
+    const rows = await sr.json().catch(() => []);
+    const configured = Array.isArray(rows) && rows[0]?.value ? String(rows[0].value) : "";
+    if (configured) {
+      const provided =
+        url.searchParams.get("secret") ||
+        req.headers.get("x-webhook-signature") ||
+        req.headers.get("x-webhook-secret") ||
+        "";
+      const a = provided;
+      const b = configured;
+      let mismatch = a.length !== b.length ? 1 : 0;
+      for (let i = 0; i < a.length && i < b.length; i++) mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+      if (mismatch !== 0) {
+        console.warn("webhook rejected: invalid secret", provider);
+        return okHtml();
+      }
+    }
+  } catch (e) {
+    console.error("webhook secret check failed", e);
+    return okHtml();
+  }
+
   let payload: any = null;
   try {
     const text = await req.text();
