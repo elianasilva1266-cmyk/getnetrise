@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -18,7 +19,20 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { getAdminPassword, clearAdminPassword } from "@/lib/admin-session";
-import { Loader2, LogOut, RefreshCw, ShieldCheck, ArrowLeft, TrendingUp, CheckCircle2, Copy } from "lucide-react";
+import {
+  Loader2,
+  LogOut,
+  RefreshCw,
+  ShieldCheck,
+  ArrowLeft,
+  TrendingUp,
+  CheckCircle2,
+  Copy,
+  KeyRound,
+  Zap,
+  AlertCircle,
+  Lock,
+} from "lucide-react";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const WEBHOOK_BASE = `${SUPABASE_URL}/functions/v1/payment-webhook`;
@@ -34,10 +48,8 @@ const PROVIDER_LABELS: Record<Provider, string> = {
   pix_static: "PIX Estático",
 };
 
-// Ordem solicitada pelo cliente
 const PROVIDER_ORDER: Provider[] = ["podpay", "risepay", "masterfy", "expfy", "zuckpay", "pix_static"];
 
-// Campos de chave por gateway
 type SecretField = { key: string; label: string; type?: "password" | "text" };
 const PROVIDER_SECRETS: Record<Provider, SecretField[]> = {
   podpay: [{ key: "podpay_api_key", label: "API Key" }],
@@ -93,6 +105,10 @@ const AdminPage = () => {
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
   const [inputs, setInputs] = useState<Record<string, string>>({});
+  const [revealedSecret, setRevealedSecret] = useState<{ url: string; secret: string; provider: Provider } | null>(null);
+  const [rotatingWebhook, setRotatingWebhook] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string; detail?: string | null; took_ms?: number } | null>(null);
 
   useEffect(() => {
     if (!password) navigate("/", { replace: true });
@@ -110,9 +126,14 @@ const AdminPage = () => {
           clearAdminPassword();
           navigate("/", { replace: true });
         }
+        if ((error as any)?.context?.status === 429) {
+          throw new Error("Muitas tentativas. Aguarde alguns minutos.");
+        }
         throw error;
       }
-      if (!resp?.success) throw new Error(resp?.message || "Falha");
+      if (!resp?.success && resp?.message && !("secret" in (resp || {})) && !("detail" in (resp || {}))) {
+        throw new Error(resp?.message || "Falha");
+      }
       return resp;
     },
     [password, navigate],
@@ -180,6 +201,39 @@ const AdminPage = () => {
     }
   };
 
+  const rotateWebhookSecret = async (p: Provider) => {
+    setRotatingWebhook(true);
+    try {
+      const resp = await callAdmin({ action: "rotate_webhook_secret", provider: p });
+      if (resp?.secret) {
+        setRevealedSecret({ url: resp.webhook_url, secret: resp.secret, provider: p });
+        await loadDashboard();
+      }
+    } catch (e: any) {
+      toast({ title: "Erro", description: e?.message || "", variant: "destructive" });
+    } finally {
+      setRotatingWebhook(false);
+    }
+  };
+
+  const runTest = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const resp = await callAdmin({ action: "test_gateway", provider: currentProvider });
+      setTestResult({
+        success: !!resp?.success,
+        message: resp?.message || (resp?.success ? "OK" : "Falha"),
+        detail: resp?.detail ?? null,
+        took_ms: resp?.took_ms,
+      });
+    } catch (e: any) {
+      setTestResult({ success: false, message: e?.message || "Erro" });
+    } finally {
+      setTesting(false);
+    }
+  };
+
   const logout = () => {
     clearAdminPassword();
     navigate("/", { replace: true });
@@ -189,6 +243,11 @@ const AdminPage = () => {
     (p: Provider) => PROVIDER_SECRETS[p].every((f) => data?.secrets?.[f.key]?.configured),
     [data],
   );
+
+  const copyToClipboard = (text: string, label = "Copiado") => {
+    navigator.clipboard.writeText(text);
+    toast({ title: label });
+  };
 
   if (!password) return null;
   if (loading) {
@@ -241,38 +300,12 @@ const AdminPage = () => {
           </CardContent>
         </Card>
 
-        {/* Kill switch */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Sistema de pagamento</CardTitle>
-            <CardDescription>Ativa ou desativa o botão de pagar no checkout.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
-              <div>
-                <Label className="font-semibold">
-                  {paymentEnabled ? "Ativo" : "Desativado"}
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  {paymentEnabled ? "Clientes podem pagar" : "Erro genérico é exibido no checkout"}
-                </p>
-              </div>
-              <Switch
-                checked={paymentEnabled}
-                onCheckedChange={togglePayment}
-                disabled={savingKey === "payment_enabled"}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Gateways: um card por gateway (na ordem solicitada), clicável */}
+        {/* Gateways — MOVIDO PARA CIMA */}
         <Card>
           <CardHeader>
             <CardTitle>Gateways</CardTitle>
             <CardDescription>
-              Clique em uma gateway para configurar suas chaves ou defini-la como ativa. Faturamento
-              exibido é apenas dos pedidos aprovados registrados.
+              Clique em uma gateway para configurar chaves, gerar webhook ou defini-la como ativa.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -286,15 +319,22 @@ const AdminPage = () => {
                     key={p}
                     type="button"
                     onClick={() => setSelectedProvider(p)}
-                    className={`text-left p-4 rounded-xl border transition hover:shadow-md hover:border-primary/60 ${
-                      isActive ? "border-primary bg-primary/5" : "border-border bg-card"
+                    className={`relative text-left p-4 rounded-xl border transition hover:shadow-md hover:border-primary/60 ${
+                      isActive ? "border-emerald-500 bg-emerald-500/5 ring-1 ring-emerald-500/40" : "border-border bg-card"
                     }`}
                   >
-                    <div className="flex items-start justify-between mb-2">
+                    {/* BOLA VERDE de gateway ativa */}
+                    {isActive && (
+                      <span className="absolute top-3 right-3 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+                      </span>
+                    )}
+                    <div className="flex items-start justify-between mb-2 pr-5">
                       <span className="font-semibold text-base">{PROVIDER_LABELS[p]}</span>
                       <div className="flex flex-col items-end gap-1">
                         {isActive && (
-                          <Badge className="bg-primary text-primary-foreground">Ativa</Badge>
+                          <Badge className="bg-emerald-500 hover:bg-emerald-500 text-white text-[10px]">Ativa</Badge>
                         )}
                         <Badge variant={configured ? "default" : "secondary"} className="text-[10px]">
                           {configured ? (
@@ -317,6 +357,89 @@ const AdminPage = () => {
                 );
               })}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Sistema de pagamento — MOVIDO PARA BAIXO com abas */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Sistema de pagamento</CardTitle>
+            <CardDescription>Controle geral e testes da gateway ativa.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="control">
+              <TabsList className="grid grid-cols-2 w-full max-w-md">
+                <TabsTrigger value="control">Controle</TabsTrigger>
+                <TabsTrigger value="test">Sincronização / Teste</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="control" className="pt-4">
+                <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                  <div>
+                    <Label className="font-semibold">
+                      {paymentEnabled ? "Ativo" : "Desativado"}
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      {paymentEnabled ? "Clientes podem pagar" : "Erro genérico é exibido no checkout"}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={paymentEnabled}
+                    onCheckedChange={togglePayment}
+                    disabled={savingKey === "payment_enabled"}
+                  />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="test" className="pt-4">
+                <div className="space-y-4">
+                  <div className="p-3 rounded-lg border bg-card flex items-center justify-between gap-3 flex-wrap">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Gateway ativa</p>
+                      <p className="font-semibold flex items-center gap-2">
+                        <span className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                        {PROVIDER_LABELS[currentProvider]}
+                      </p>
+                    </div>
+                    <Button onClick={runTest} disabled={testing}>
+                      {testing ? (
+                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Testando…</>
+                      ) : (
+                        <><Zap className="w-4 h-4 mr-2" /> Testar gateway ativa</>
+                      )}
+                    </Button>
+                  </div>
+                  {testResult && (
+                    <div
+                      className={`p-3 rounded-lg border ${
+                        testResult.success
+                          ? "border-emerald-500/40 bg-emerald-500/5"
+                          : "border-destructive/40 bg-destructive/5"
+                      }`}
+                    >
+                      <p className="font-semibold flex items-center gap-2">
+                        {testResult.success ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 text-destructive" />
+                        )}
+                        {testResult.success ? "Sincronização OK" : "Falha"}
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">{testResult.message}</p>
+                      {testResult.detail && (
+                        <p className="text-xs font-mono break-all mt-2 opacity-80">
+                          {String(testResult.detail).slice(0, 160)}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    O teste envia uma transação de R$ 5,00 fictícia para a gateway ativa apenas para
+                    validar credenciais e conectividade. Nenhum pedido real é criado.
+                  </p>
+                </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 
@@ -367,21 +490,22 @@ const AdminPage = () => {
         </Card>
 
         <Separator />
-        <p className="text-xs text-muted-foreground text-center pb-6">
-          Sessão expira ao fechar a aba. As chaves e ajustes são aplicados globalmente em produção.
+        <p className="text-xs text-muted-foreground text-center pb-6 flex items-center justify-center gap-2">
+          <Lock className="w-3 h-3" />
+          Sessão expira ao fechar a aba. Painel protegido por senha + limite de tentativas.
         </p>
       </main>
 
       {/* Modal por gateway */}
       <Dialog open={!!selectedProvider} onOpenChange={(o) => !o && setSelectedProvider(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           {selectedProvider && (
             <>
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   {PROVIDER_LABELS[selectedProvider]}
                   {currentProvider === selectedProvider && (
-                    <Badge className="bg-primary text-primary-foreground">Ativa</Badge>
+                    <span className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
                   )}
                 </DialogTitle>
                 <DialogDescription>
@@ -422,46 +546,72 @@ const AdminPage = () => {
                           {savingKey === f.key ? <Loader2 className="w-4 h-4 animate-spin" /> : "Salvar"}
                         </Button>
                       </div>
-                      {info?.updated_at && (
-                        <p className="text-[10px] text-muted-foreground">
-                          Atualizado: {fmtDate(info.updated_at)}
-                        </p>
-                      )}
                     </div>
                   );
                 })}
 
                 {selectedProvider !== "pix_static" && (
-                  <div className="space-y-2 pt-2 border-t">
-                    <Label className="text-sm font-medium">Webhook (postback URL)</Label>
+                  <div className="space-y-3 pt-3 border-t">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-medium flex items-center gap-2">
+                        <KeyRound className="w-3.5 h-3.5" /> Webhook
+                      </Label>
+                      <Badge
+                        variant={
+                          data?.secrets?.[`webhook_secret_${selectedProvider}`]?.configured
+                            ? "default"
+                            : "secondary"
+                        }
+                        className="text-[10px]"
+                      >
+                        {data?.secrets?.[`webhook_secret_${selectedProvider}`]?.configured
+                          ? "Secret ativo"
+                          : "Sem secret"}
+                      </Badge>
+                    </div>
                     <p className="text-[11px] text-muted-foreground">
-                      Cole esta URL no painel da {PROVIDER_LABELS[selectedProvider]} como URL de
-                      notificação. Ao abrir no navegador exibe uma página neutra.
+                      Gere um secret único. Ele será exibido <b>apenas uma vez</b>. Cole a URL completa
+                      no painel da {PROVIDER_LABELS[selectedProvider]} — requisições sem o secret
+                      correto são bloqueadas.
                     </p>
                     <div className="flex gap-2">
                       <Input
                         readOnly
                         value={`${WEBHOOK_BASE}?provider=${selectedProvider}`}
-                        className="h-10 text-xs font-mono"
+                        className="h-9 text-xs font-mono"
                         onFocus={(e) => e.currentTarget.select()}
                       />
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => {
-                          navigator.clipboard.writeText(`${WEBHOOK_BASE}?provider=${selectedProvider}`);
-                          toast({ title: "URL copiada" });
-                        }}
+                        onClick={() => copyToClipboard(`${WEBHOOK_BASE}?provider=${selectedProvider}`, "URL base copiada")}
                       >
                         <Copy className="w-4 h-4" />
                       </Button>
                     </div>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="w-full"
+                      onClick={() => rotateWebhookSecret(selectedProvider)}
+                      disabled={rotatingWebhook}
+                    >
+                      {rotatingWebhook ? (
+                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Gerando…</>
+                      ) : (
+                        <><KeyRound className="w-4 h-4 mr-2" />
+                          {data?.secrets?.[`webhook_secret_${selectedProvider}`]?.configured
+                            ? "Gerar novo secret (invalida o anterior)"
+                            : "Gerar secret do webhook"}
+                        </>
+                      )}
+                    </Button>
                   </div>
                 )}
               </div>
 
               <DialogFooter className="gap-2 sm:gap-0">
-                {currentProvider !== selectedProvider && (
+                {currentProvider !== selectedProvider ? (
                   <Button
                     variant="default"
                     onClick={() => setProvider(selectedProvider)}
@@ -474,12 +624,82 @@ const AdminPage = () => {
                       <>Definir {PROVIDER_LABELS[selectedProvider]} como gateway ativa</>
                     )}
                   </Button>
-                )}
-                {currentProvider === selectedProvider && (
+                ) : (
                   <p className="text-sm text-muted-foreground text-center w-full">
                     Esta é a gateway ativa no checkout.
                   </p>
                 )}
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal one-time reveal do webhook secret */}
+      <Dialog open={!!revealedSecret} onOpenChange={(o) => !o && setRevealedSecret(null)}>
+        <DialogContent className="max-w-md">
+          {revealedSecret && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/15 flex items-center justify-center">
+                    <Lock className="w-4 h-4 text-emerald-500" />
+                  </div>
+                  Webhook cadastrado
+                </DialogTitle>
+                <DialogDescription>
+                  Aqui está o secret do seu webhook. Ele é exibido apenas neste momento. Guarde em
+                  um local seguro para validar as notificações enviadas ao seu endpoint.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3 py-2">
+                <div>
+                  <Label className="text-xs">Secret</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Input
+                      readOnly
+                      value={revealedSecret.secret}
+                      className="h-10 font-mono text-xs"
+                      onFocus={(e) => e.currentTarget.select()}
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => copyToClipboard(revealedSecret.secret, "Secret copiado")}
+                      className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                    >
+                      <Copy className="w-4 h-4 mr-1" /> Copiar
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">URL completa (cole no painel da gateway)</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Input
+                      readOnly
+                      value={revealedSecret.url}
+                      className="h-10 font-mono text-[11px]"
+                      onFocus={(e) => e.currentTarget.select()}
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => copyToClipboard(revealedSecret.url, "URL copiada")}
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Se você perder esse secret, precisará gerar um novo webhook.
+                </p>
+              </div>
+              <DialogFooter>
+                <Button
+                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white"
+                  onClick={() => setRevealedSecret(null)}
+                >
+                  OK
+                </Button>
               </DialogFooter>
             </>
           )}
