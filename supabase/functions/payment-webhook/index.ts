@@ -18,6 +18,7 @@ const ALLOWED_PROVIDERS = new Set([
   "masterfy",
   "expfy",
   "zuckpay",
+  "veopag",
 ]);
 
 const BLANK_HTML = `<!doctype html>
