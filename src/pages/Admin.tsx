@@ -37,7 +37,7 @@ import {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const WEBHOOK_BASE = `${SUPABASE_URL}/functions/v1/payment-webhook`;
 
-type Provider = "podpay" | "risepay" | "masterfy" | "expfy" | "zuckpay" | "pix_static";
+type Provider = "podpay" | "risepay" | "masterfy" | "expfy" | "zuckpay" | "veopag" | "pix_static";
 
 const PROVIDER_LABELS: Record<Provider, string> = {
   podpay: "PodPay",
@@ -45,10 +45,11 @@ const PROVIDER_LABELS: Record<Provider, string> = {
   masterfy: "MasterFy",
   expfy: "EXPFY",
   zuckpay: "ZuckPay",
+  veopag: "VeoPag",
   pix_static: "PIX Estático",
 };
 
-const PROVIDER_ORDER: Provider[] = ["podpay", "risepay", "masterfy", "expfy", "zuckpay", "pix_static"];
+const PROVIDER_ORDER: Provider[] = ["podpay", "risepay", "masterfy", "expfy", "zuckpay", "veopag", "pix_static"];
 
 type SecretField = { key: string; label: string; type?: "password" | "text" };
 const PROVIDER_SECRETS: Record<Provider, SecretField[]> = {
@@ -62,6 +63,10 @@ const PROVIDER_SECRETS: Record<Provider, SecretField[]> = {
   zuckpay: [
     { key: "zuckpay_client_id", label: "Client ID" },
     { key: "zuckpay_client_secret", label: "Client Secret" },
+  ],
+  veopag: [
+    { key: "veopag_client_id", label: "Client ID" },
+    { key: "veopag_client_secret", label: "Client Secret" },
   ],
   pix_static: [{ key: "pix_static_key", label: "Chave PIX (aleatória/UUID)", type: "text" }],
 };
