@@ -291,6 +291,7 @@ serve(async (req) => {
         masterfy: "create-masterfy-payment",
         expfy: "create-expfy-payment",
         zuckpay: "create-zuckpay-payment",
+        veopag: "create-veopag-payment",
       };
       const fn = fnMap[p];
       const testId = `TEST-${Date.now()}`;
