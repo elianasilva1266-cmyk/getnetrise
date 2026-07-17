@@ -6,7 +6,7 @@ import { setAdminPassword } from "@/lib/admin-session";
 const CLICK_THRESHOLD = 7;
 const CLICK_TIMEOUT = 2000;
 
-export type PaymentProvider = "risepay" | "zuckpay" | "pix_static" | "masterfy" | "expfy" | "podpay";
+export type PaymentProvider = "risepay" | "zuckpay" | "pix_static" | "masterfy" | "expfy" | "podpay" | "veopag";
 
 const DEFAULT_PIX_STATIC_KEY = "6b81c3ec-916f-4974-9ea4-3c2d12edc555";
 const POLL_INTERVAL_MS = 30_000;
