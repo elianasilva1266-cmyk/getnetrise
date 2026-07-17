@@ -36,7 +36,8 @@ export const usePaymentKillswitch = () => {
           data.payment_provider === "pix_static" ||
           data.payment_provider === "masterfy" ||
           data.payment_provider === "expfy" ||
-          data.payment_provider === "podpay"
+          data.payment_provider === "podpay" ||
+          data.payment_provider === "veopag"
         ) {
           setProviderState(data.payment_provider);
         }
