@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
+import AdmLogin from "./pages/AdmLogin";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 const queryClient = new QueryClient();
