@@ -64,8 +64,9 @@ const ALLOWED_PROVIDERS = [
   "expfy",
   "podpay",
   "veopag",
+  "caospay",
 ] as const;
-const WEBHOOK_PROVIDERS = ["podpay", "risepay", "masterfy", "expfy", "zuckpay", "veopag"] as const;
+const WEBHOOK_PROVIDERS = ["podpay", "risepay", "masterfy", "expfy", "zuckpay", "veopag", "caospay"] as const;
 const ALLOWED_PROVIDERS_SET = new Set<string>(ALLOWED_PROVIDERS);
 const ALLOWED_SECRET_KEYS = new Set<string>([
   "pix_static_key",
@@ -78,6 +79,7 @@ const ALLOWED_SECRET_KEYS = new Set<string>([
   "podpay_api_key",
   "veopag_client_id",
   "veopag_client_secret",
+  "caospay_api_key",
   ...WEBHOOK_PROVIDERS.map((p) => `webhook_secret_${p}`),
 ]);
 
@@ -292,6 +294,7 @@ serve(async (req) => {
         expfy: "create-expfy-payment",
         zuckpay: "create-zuckpay-payment",
         veopag: "create-veopag-payment",
+        caospay: "create-caospay-payment",
       };
       const fn = fnMap[p];
       const testId = `TEST-${Date.now()}`;

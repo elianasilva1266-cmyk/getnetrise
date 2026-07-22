@@ -19,6 +19,7 @@ const ALLOWED_PROVIDERS = new Set([
   "expfy",
   "zuckpay",
   "veopag",
+  "caospay",
 ]);
 
 const BLANK_HTML = `<!doctype html>
