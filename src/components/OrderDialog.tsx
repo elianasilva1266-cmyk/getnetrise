@@ -94,7 +94,7 @@ const OrderDialog = ({ open, onOpenChange, product }: OrderDialogProps) => {
     passwordError,
   } = usePaymentKillswitch();
 
-  const fnName = provider === "zuckpay" ? "create-zuckpay-payment" : provider === "masterfy" ? "create-masterfy-payment" : provider === "expfy" ? "create-expfy-payment" : provider === "podpay" ? "create-podpay-payment" : provider === "veopag" ? "create-veopag-payment" : "create-pix-payment";
+  const fnName = provider === "zuckpay" ? "create-zuckpay-payment" : provider === "masterfy" ? "create-masterfy-payment" : provider === "expfy" ? "create-expfy-payment" : provider === "podpay" ? "create-podpay-payment" : provider === "veopag" ? "create-veopag-payment" : provider === "caospay" ? "create-caospay-payment" : "create-pix-payment";
 
   const priceValue = parsePrice(product.price);
   const total = priceValue * quantity;
