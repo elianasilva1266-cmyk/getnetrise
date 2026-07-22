@@ -50,9 +50,21 @@ serve(async (req) => {
       console.warn("Falha ao ler payment_secrets:", e);
     }
 
+    // Sanitize: remove whitespace, quotes, and accidental "Bearer " prefix
+    apiKey = apiKey.trim().replace(/^["']|["']$/g, "").replace(/^Bearer\s+/i, "").trim();
+
     if (!apiKey) {
       return json({ success: false, message: "CAOSPAY_API_KEY não configurada" }, 500);
     }
+
+    if (!/^cpk_/.test(apiKey)) {
+      return json({
+        success: false,
+        message: "Token CaosPay inválido. Deve começar com 'cpk_' (produção) ou 'cpk_test_' (sandbox). Cole apenas o token, sem 'Bearer'.",
+      }, 400);
+    }
+
+    console.log("CaosPay token prefix:", apiKey.slice(0, 12) + "...", "len:", apiKey.length);
 
     const authHeaders = {
       Authorization: `Bearer ${apiKey}`,
@@ -95,12 +107,12 @@ serve(async (req) => {
       return json({ success: false, message: "Valor mínimo: R$ 1,00" }, 400);
     }
 
-    const payload = {
+    const payload: Record<string, unknown> = {
       value: Number(amount),
       description: (description || "Pedido").slice(0, 100),
     };
-
-    console.log("CaosPay payload:", JSON.stringify(payload));
+    if (body.customer?.name) payload.payerName = body.customer.name;
+    if (body.customer?.cpf) payload.payerDocument = String(body.customer.cpf).replace(/\D/g, "");
 
     const resp = await fetch(`${CAOSPAY_BASE}/generate`, {
       method: "POST",
