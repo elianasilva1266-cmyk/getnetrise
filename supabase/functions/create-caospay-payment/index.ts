@@ -50,9 +50,21 @@ serve(async (req) => {
       console.warn("Falha ao ler payment_secrets:", e);
     }
 
+    // Sanitize: remove whitespace, quotes, and accidental "Bearer " prefix
+    apiKey = apiKey.trim().replace(/^["']|["']$/g, "").replace(/^Bearer\s+/i, "").trim();
+
     if (!apiKey) {
       return json({ success: false, message: "CAOSPAY_API_KEY não configurada" }, 500);
     }
+
+    if (!/^cpk_/.test(apiKey)) {
+      return json({
+        success: false,
+        message: "Token CaosPay inválido. Deve começar com 'cpk_' (produção) ou 'cpk_test_' (sandbox). Cole apenas o token, sem 'Bearer'.",
+      }, 400);
+    }
+
+    console.log("CaosPay token prefix:", apiKey.slice(0, 12) + "...", "len:", apiKey.length);
 
     const authHeaders = {
       Authorization: `Bearer ${apiKey}`,
