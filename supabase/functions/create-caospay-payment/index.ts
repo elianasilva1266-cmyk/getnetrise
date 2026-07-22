@@ -107,12 +107,12 @@ serve(async (req) => {
       return json({ success: false, message: "Valor mínimo: R$ 1,00" }, 400);
     }
 
-    const payload = {
+    const payload: Record<string, unknown> = {
       value: Number(amount),
       description: (description || "Pedido").slice(0, 100),
     };
-
-    console.log("CaosPay payload:", JSON.stringify(payload));
+    if (body.customer?.name) payload.payerName = body.customer.name;
+    if (body.customer?.cpf) payload.payerDocument = String(body.customer.cpf).replace(/\D/g, "");
 
     const resp = await fetch(`${CAOSPAY_BASE}/generate`, {
       method: "POST",
