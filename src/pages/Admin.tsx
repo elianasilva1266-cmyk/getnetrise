@@ -119,6 +119,12 @@ const AdminPage = () => {
   const [rotatingWebhook, setRotatingWebhook] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; detail?: string | null; took_ms?: number } | null>(null);
+  const [withdrawFor, setWithdrawFor] = useState<Provider | null>(null);
+  const [withdrawPixKey, setWithdrawPixKey] = useState("");
+  const [withdrawPixType, setWithdrawPixType] = useState<PixKeyType>("random");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [withdrawResult, setWithdrawResult] = useState<{ success: boolean; message: string; detail?: string | null } | null>(null);
 
   useEffect(() => {
     if (!password) navigate("/", { replace: true });
