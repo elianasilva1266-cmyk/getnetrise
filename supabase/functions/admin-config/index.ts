@@ -136,7 +136,7 @@ serve(async (req) => {
   const parsed = BodySchema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return json({ success: false, message: "Payload inválido." }, 400);
 
-  const { action, key, value, provider } = parsed.data;
+  const { action, key, value, provider, pix_key, pix_key_type, amount } = parsed.data;
   const supaUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
