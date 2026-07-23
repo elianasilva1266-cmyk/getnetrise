@@ -331,6 +331,81 @@ serve(async (req) => {
       });
     }
 
+    if (action === "withdraw") {
+      const p = (provider || "").toLowerCase();
+      if (!ALLOWED_PROVIDERS_SET.has(p)) {
+        return json({ success: false, message: "Gateway inválida" }, 400);
+      }
+      if (!pix_key || !pix_key_type || !amount) {
+        return json({ success: false, message: "Chave PIX, tipo e valor são obrigatórios" }, 400);
+      }
+      if (amount < 1) return json({ success: false, message: "Valor mínimo: R$ 1,00" }, 400);
+
+      // Fetch provider api key from payment_secrets
+      const secretKeyMap: Record<string, string> = {
+        caospay: "caospay_api_key",
+        risepay: "risepay_token",
+        masterfy: "masterfy_api_key",
+        podpay: "podpay_api_key",
+      };
+      const skey = secretKeyMap[p];
+      let apiKey = "";
+      if (skey) {
+        const r = await fetch(
+          `${supaUrl}/rest/v1/payment_secrets?key=eq.${skey}&select=value`,
+          { headers: readHeaders },
+        );
+        const rows = await r.json().catch(() => []);
+        if (Array.isArray(rows) && rows[0]?.value) apiKey = String(rows[0].value).trim();
+      }
+
+      if (p === "caospay") {
+        if (!apiKey) return json({ success: false, message: "Token CaosPay não configurado" }, 400);
+        const token = apiKey.replace(/^Bearer\s+/i, "").trim();
+        const typeMap: Record<string, string> = {
+          cpf: "CPF",
+          cnpj: "CNPJ",
+          email: "EMAIL",
+          phone: "PHONE",
+          random: "RANDOM",
+        };
+        const resp = await fetch("https://caospayment.shop/api/pay/withdraw", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            value: Number(amount),
+            pixKey: pix_key,
+            pixKeyType: typeMap[pix_key_type],
+          }),
+        });
+        const dataRaw = await resp.text();
+        let dataParsed: any = null;
+        try { dataParsed = JSON.parse(dataRaw); } catch { dataParsed = { raw: dataRaw.slice(0, 300) }; }
+        if (!resp.ok || dataParsed?.success === false) {
+          return json({
+            success: false,
+            message: dataParsed?.message || dataParsed?.error || `Falha CaosPay (${resp.status})`,
+          });
+        }
+        return json({
+          success: true,
+          message: "Saque solicitado com sucesso. Aguarde processamento.",
+          detail: dataParsed?.transactionId || dataParsed?.id || null,
+        });
+      }
+
+      // Other gateways: no public payout API
+      return json({
+        success: false,
+        message:
+          `A gateway ${p.toUpperCase()} não expõe API pública de saque. Faça o saque diretamente no painel oficial da gateway.`,
+      });
+    }
+
     return json({ success: false, message: "Ação desconhecida" }, 400);
   } catch (err) {
     console.error("admin-config error", err);
