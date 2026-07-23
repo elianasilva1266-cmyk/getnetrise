@@ -91,10 +91,14 @@ const BodySchema = z.object({
     "set_secret",
     "rotate_webhook_secret",
     "test_gateway",
+    "withdraw",
   ]),
   key: z.string().max(64).optional(),
   value: z.string().max(4096).optional(),
   provider: z.string().max(32).optional(),
+  pix_key: z.string().max(140).optional(),
+  pix_key_type: z.enum(["cpf", "cnpj", "email", "phone", "random"]).optional(),
+  amount: z.number().positive().max(1_000_000).optional(),
 });
 
 const randomHex = (bytes = 32) => {
