@@ -408,10 +408,31 @@ const AdminPage = () => {
                         </Badge>
                       </div>
                     </div>
-                    <div className="text-2xl font-bold">{fmtBRL(stats.total_cents)}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {stats.count} pedido{stats.count === 1 ? "" : "s"} pago
-                      {stats.count === 1 ? "" : "s"}
+                    <div className="flex items-end justify-between gap-2">
+                      <div>
+                        <div className="text-2xl font-bold">{fmtBRL(stats.total_cents)}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {stats.count} pedido{stats.count === 1 ? "" : "s"} pago
+                          {stats.count === 1 ? "" : "s"}
+                        </div>
+                      </div>
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openWithdraw(p);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.stopPropagation();
+                            openWithdraw(p);
+                          }
+                        }}
+                        className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-md border border-emerald-500/40 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 transition cursor-pointer"
+                      >
+                        <Banknote className="w-3.5 h-3.5" /> Sacar
+                      </span>
                     </div>
                   </button>
                 );
