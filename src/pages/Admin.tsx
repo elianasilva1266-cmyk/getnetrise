@@ -250,6 +250,50 @@ const AdminPage = () => {
     }
   };
 
+  const openWithdraw = (p: Provider) => {
+    setWithdrawFor(p);
+    setWithdrawPixKey("");
+    setWithdrawPixType("random");
+    setWithdrawAmount("");
+    setWithdrawResult(null);
+  };
+
+  const submitWithdraw = async () => {
+    if (!withdrawFor) return;
+    const amt = Number(String(withdrawAmount).replace(",", "."));
+    if (!withdrawPixKey.trim()) {
+      setWithdrawResult({ success: false, message: "Informe a chave PIX" });
+      return;
+    }
+    if (!amt || amt < 1) {
+      setWithdrawResult({ success: false, message: "Valor mínimo: R$ 1,00" });
+      return;
+    }
+    setWithdrawing(true);
+    setWithdrawResult(null);
+    try {
+      const resp = await callAdmin({
+        action: "withdraw",
+        provider: withdrawFor,
+        pix_key: withdrawPixKey.trim(),
+        pix_key_type: withdrawPixType,
+        amount: amt,
+      });
+      setWithdrawResult({
+        success: !!resp?.success,
+        message: resp?.message || (resp?.success ? "OK" : "Falha"),
+        detail: resp?.detail ?? null,
+      });
+      if (resp?.success) {
+        toast({ title: "Saque solicitado", description: resp?.message });
+      }
+    } catch (e: any) {
+      setWithdrawResult({ success: false, message: e?.message || "Erro" });
+    } finally {
+      setWithdrawing(false);
+    }
+  };
+
   const logout = () => {
     clearAdminPassword();
     navigate("/", { replace: true });
