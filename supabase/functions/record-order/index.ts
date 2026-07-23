@@ -13,6 +13,8 @@ const ALLOWED_PROVIDERS = new Set([
   "masterfy",
   "expfy",
   "podpay",
+  "veopag",
+  "caospay",
 ]);
 
 const BodySchema = z.object({
