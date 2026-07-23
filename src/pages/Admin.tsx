@@ -32,7 +32,10 @@ import {
   Zap,
   AlertCircle,
   Lock,
+  Banknote,
 } from "lucide-react";
+
+type PixKeyType = "cpf" | "cnpj" | "email" | "phone" | "random";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const WEBHOOK_BASE = `${SUPABASE_URL}/functions/v1/payment-webhook`;
@@ -116,6 +119,12 @@ const AdminPage = () => {
   const [rotatingWebhook, setRotatingWebhook] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; detail?: string | null; took_ms?: number } | null>(null);
+  const [withdrawFor, setWithdrawFor] = useState<Provider | null>(null);
+  const [withdrawPixKey, setWithdrawPixKey] = useState("");
+  const [withdrawPixType, setWithdrawPixType] = useState<PixKeyType>("random");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [withdrawResult, setWithdrawResult] = useState<{ success: boolean; message: string; detail?: string | null } | null>(null);
 
   useEffect(() => {
     if (!password) navigate("/", { replace: true });
@@ -241,6 +250,50 @@ const AdminPage = () => {
     }
   };
 
+  const openWithdraw = (p: Provider) => {
+    setWithdrawFor(p);
+    setWithdrawPixKey("");
+    setWithdrawPixType("random");
+    setWithdrawAmount("");
+    setWithdrawResult(null);
+  };
+
+  const submitWithdraw = async () => {
+    if (!withdrawFor) return;
+    const amt = Number(String(withdrawAmount).replace(",", "."));
+    if (!withdrawPixKey.trim()) {
+      setWithdrawResult({ success: false, message: "Informe a chave PIX" });
+      return;
+    }
+    if (!amt || amt < 1) {
+      setWithdrawResult({ success: false, message: "Valor mínimo: R$ 1,00" });
+      return;
+    }
+    setWithdrawing(true);
+    setWithdrawResult(null);
+    try {
+      const resp = await callAdmin({
+        action: "withdraw",
+        provider: withdrawFor,
+        pix_key: withdrawPixKey.trim(),
+        pix_key_type: withdrawPixType,
+        amount: amt,
+      });
+      setWithdrawResult({
+        success: !!resp?.success,
+        message: resp?.message || (resp?.success ? "OK" : "Falha"),
+        detail: resp?.detail ?? null,
+      });
+      if (resp?.success) {
+        toast({ title: "Saque solicitado", description: resp?.message });
+      }
+    } catch (e: any) {
+      setWithdrawResult({ success: false, message: e?.message || "Erro" });
+    } finally {
+      setWithdrawing(false);
+    }
+  };
+
   const logout = () => {
     clearAdminPassword();
     navigate("/", { replace: true });
@@ -355,10 +408,31 @@ const AdminPage = () => {
                         </Badge>
                       </div>
                     </div>
-                    <div className="text-2xl font-bold">{fmtBRL(stats.total_cents)}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {stats.count} pedido{stats.count === 1 ? "" : "s"} pago
-                      {stats.count === 1 ? "" : "s"}
+                    <div className="flex items-end justify-between gap-2">
+                      <div>
+                        <div className="text-2xl font-bold">{fmtBRL(stats.total_cents)}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {stats.count} pedido{stats.count === 1 ? "" : "s"} pago
+                          {stats.count === 1 ? "" : "s"}
+                        </div>
+                      </div>
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openWithdraw(p);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.stopPropagation();
+                            openWithdraw(p);
+                          }
+                        }}
+                        className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-md border border-emerald-500/40 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 transition cursor-pointer"
+                      >
+                        <Banknote className="w-3.5 h-3.5" /> Sacar
+                      </span>
                     </div>
                   </button>
                 );
@@ -706,6 +780,125 @@ const AdminPage = () => {
                   onClick={() => setRevealedSecret(null)}
                 >
                   OK
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de saque */}
+      <Dialog
+        open={!!withdrawFor}
+        onOpenChange={(o) => {
+          if (!o) {
+            setWithdrawFor(null);
+            setWithdrawResult(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          {withdrawFor && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Banknote className="w-5 h-5 text-emerald-500" />
+                  Sacar de {PROVIDER_LABELS[withdrawFor]}
+                </DialogTitle>
+                <DialogDescription>
+                  Saldo acumulado nesta gateway:{" "}
+                  <b>{fmtBRL(data?.revenue.by_provider?.[withdrawFor]?.total_cents ?? 0)}</b>.
+                  O valor real disponível deve ser conferido no painel oficial da gateway.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-3 py-2">
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Tipo da chave PIX</Label>
+                  <select
+                    value={withdrawPixType}
+                    onChange={(e) => setWithdrawPixType(e.target.value as PixKeyType)}
+                    className="w-full h-10 rounded-md border bg-background px-3 text-sm"
+                  >
+                    <option value="random">Chave aleatória (UUID)</option>
+                    <option value="cpf">CPF</option>
+                    <option value="cnpj">CNPJ</option>
+                    <option value="email">E-mail</option>
+                    <option value="phone">Telefone</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Chave PIX de destino</Label>
+                  <Input
+                    value={withdrawPixKey}
+                    onChange={(e) => setWithdrawPixKey(e.target.value)}
+                    placeholder="Cole a chave PIX para recebimento"
+                    className="h-10 text-sm"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Valor (R$)</Label>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    value={withdrawAmount}
+                    onChange={(e) => setWithdrawAmount(e.target.value.replace(/[^\d.,]/g, ""))}
+                    placeholder="0,00"
+                    className="h-10 text-sm"
+                  />
+                </div>
+
+                {withdrawResult && (
+                  <div
+                    className={`p-3 rounded-lg border text-sm ${
+                      withdrawResult.success
+                        ? "border-emerald-500/40 bg-emerald-500/5"
+                        : "border-destructive/40 bg-destructive/5"
+                    }`}
+                  >
+                    <p className="font-semibold flex items-center gap-2">
+                      {withdrawResult.success ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-destructive" />
+                      )}
+                      {withdrawResult.success ? "Saque solicitado" : "Falha no saque"}
+                    </p>
+                    <p className="text-muted-foreground mt-1">{withdrawResult.message}</p>
+                    {withdrawResult.detail && (
+                      <p className="text-xs font-mono break-all mt-2 opacity-80">
+                        ID: {String(withdrawResult.detail)}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Saque via API é suportado apenas na <b>CaosPay</b>. Nas demais gateways, o
+                  botão apenas informa o status — o saque precisa ser feito no painel oficial da gateway.
+                </p>
+              </div>
+
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button
+                  variant="outline"
+                  onClick={() => setWithdrawFor(null)}
+                  disabled={withdrawing}
+                >
+                  Fechar
+                </Button>
+                <Button
+                  onClick={submitWithdraw}
+                  disabled={withdrawing}
+                  className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                >
+                  {withdrawing ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Enviando…</>
+                  ) : (
+                    <><Banknote className="w-4 h-4 mr-2" /> Solicitar saque</>
+                  )}
                 </Button>
               </DialogFooter>
             </>
