@@ -32,7 +32,10 @@ import {
   Zap,
   AlertCircle,
   Lock,
+  Banknote,
 } from "lucide-react";
+
+type PixKeyType = "cpf" | "cnpj" | "email" | "phone" | "random";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const WEBHOOK_BASE = `${SUPABASE_URL}/functions/v1/payment-webhook`;
